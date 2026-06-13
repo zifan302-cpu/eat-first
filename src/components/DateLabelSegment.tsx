@@ -1,0 +1,31 @@
+import type { DateLabelType, LocaleCode } from "../types/food";
+import { dateLabelOptions } from "../i18n";
+import { cx } from "../lib/ui";
+
+interface DateLabelSegmentProps {
+  value: DateLabelType;
+  locale: LocaleCode;
+  onChange(value: DateLabelType): void;
+}
+
+export function DateLabelSegment({ value, locale, onChange }: DateLabelSegmentProps): JSX.Element {
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      {dateLabelOptions(locale).map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          onClick={() => onChange(option.value)}
+          className={cx(
+            "min-h-11 rounded-md border px-3 text-sm font-semibold",
+            value === option.value
+              ? "border-leaf-500 bg-leaf-50 text-leaf-700"
+              : "border-stone-200 bg-white text-stone-700"
+          )}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
