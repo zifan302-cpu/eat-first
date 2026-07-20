@@ -17,10 +17,10 @@ export function DateLabelSegment({ value, locale, onChange }: DateLabelSegmentPr
           type="button"
           onClick={() => onChange(option.value)}
           className={cx(
-            "min-h-11 rounded-md border px-3 text-sm font-semibold",
+            "min-h-11 rounded-[0.9rem] border px-3 text-sm font-bold transition",
             value === option.value
-              ? "border-leaf-500 bg-leaf-50 text-leaf-700"
-              : "border-stone-200 bg-white text-stone-700"
+              ? "border-ink bg-ink text-paper"
+              : "border-paper-line bg-paper text-ink-muted"
           )}
         >
           {option.label}

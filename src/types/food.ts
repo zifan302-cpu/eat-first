@@ -20,7 +20,7 @@ export type FoodCategory =
   | "frozen_food"
   | "other";
 
-export type FoodSource = "manual" | "demo_seed" | "batch_add" | "import";
+export type FoodSource = "manual" | "barcode" | "batch_add" | "import";
 
 export type FoodActionType =
   | "created"
@@ -47,6 +47,7 @@ export interface FoodItem {
   labelDate?: string;
   openedShelfLifeDays?: number;
   quantityText?: string;
+  barcode?: string;
   note?: string;
   status: FoodStatus;
   source: FoodSource;
@@ -62,20 +63,17 @@ export interface FoodItem {
 export interface UserPreferences {
   locale: LocaleCode;
   topN: number;
-  proUnlocked: boolean;
   showSafetyBanner: boolean;
   hasSeenOnboarding: boolean;
-  installHintDismissedAt?: string;
 }
 
 export interface AppMeta {
   createdAt: string;
   updatedAt: string;
-  seededDemo: boolean;
 }
 
 export interface AppStateEnvelope {
-  schemaVersion: "1.0.0";
+  schemaVersion: "1.1.0";
   appId: "eat-first";
   preferences: UserPreferences;
   foods: FoodItem[];

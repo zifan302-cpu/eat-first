@@ -22,10 +22,10 @@ export function QuickDateChips({ value, onChange, t }: QuickDateChipsProps): JSX
             type="button"
             onClick={() => onChange(nextValue)}
             className={cx(
-              "min-h-10 rounded-md border px-2 text-sm font-semibold",
+              "min-h-10 rounded-[0.8rem] border px-2 text-sm font-bold",
               value === nextValue
-                ? "border-leaf-500 bg-leaf-50 text-leaf-700"
-                : "border-stone-200 bg-white text-stone-600"
+                ? "border-ink bg-ink text-paper"
+                : "border-paper-line bg-paper text-ink-muted"
             )}
           >
             {label}

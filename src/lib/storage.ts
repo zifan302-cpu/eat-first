@@ -1,7 +1,6 @@
 import type { AppStateEnvelope, FoodItem, LocaleCode } from "../types/food";
 import { APP_ID, SCHEMA_VERSION, STORAGE_KEY } from "./constants";
 import { isoNow } from "./dates";
-import { createDemoFoods } from "./sampleData";
 
 function detectLocale(): LocaleCode {
   if (typeof navigator !== "undefined" && navigator.language.toLowerCase().startsWith("zh")) {
@@ -14,13 +13,22 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+export function isImportableState(input: unknown): boolean {
+  return (
+    isObject(input) &&
+    input.appId === APP_ID &&
+    (input.schemaVersion === SCHEMA_VERSION || input.schemaVersion === "1.0.0") &&
+    Array.isArray(input.foods)
+  );
+}
+
 function normalizeFoods(input: unknown): FoodItem[] {
   if (!Array.isArray(input)) {
     return [];
   }
 
-  return input.filter((item): item is FoodItem => {
-    return (
+  return input.flatMap((item) => {
+    const valid =
       isObject(item) &&
       typeof item.id === "string" &&
       typeof item.name === "string" &&
@@ -28,8 +36,21 @@ function normalizeFoods(input: unknown): FoodItem[] {
       (item.status === "active" ||
         item.status === "eaten" ||
         item.status === "frozen" ||
-        item.status === "discarded")
-    );
+        item.status === "discarded");
+
+    if (!valid) {
+      return [];
+    }
+
+    const source =
+      item.source === "manual" ||
+      item.source === "barcode" ||
+      item.source === "batch_add" ||
+      item.source === "import"
+        ? item.source
+        : "import";
+
+    return [{ ...item, source } as FoodItem];
   });
 }
 
@@ -41,83 +62,43 @@ export function createDefaultState(now = new Date()): AppStateEnvelope {
     preferences: {
       locale: detectLocale(),
       topN: 3,
-      proUnlocked: false,
       showSafetyBanner: true,
       hasSeenOnboarding: false
     },
     foods: [],
     meta: {
       createdAt: at,
-      updatedAt: at,
-      seededDemo: false
-    }
-  };
-}
-
-export function seedDemoState(now = new Date()): AppStateEnvelope {
-  const state = createDefaultState(now);
-  return {
-    ...state,
-    foods: createDemoFoods(now),
-    meta: {
-      ...state.meta,
-      seededDemo: true
+      updatedAt: at
     }
   };
 }
 
 export function migrateState(input: unknown): AppStateEnvelope {
   if (!isObject(input)) {
-    return seedDemoState();
+    return createDefaultState();
   }
 
-  if (
-    input.appId !== APP_ID ||
-    input.schemaVersion !== SCHEMA_VERSION ||
-    !Array.isArray(input.foods)
-  ) {
-    return seedDemoState();
+  if (!isImportableState(input)) {
+    return createDefaultState();
   }
 
   const base = createDefaultState();
   const preferences = isObject(input.preferences) ? input.preferences : {};
   const meta = isObject(input.meta) ? input.meta : {};
   const foods = normalizeFoods(input.foods);
-  const shouldRefreshOldDemo =
-    meta.seededDemo === true &&
-    foods.length < 15 &&
-    foods.length > 0 &&
-    foods.every((food) => food.source === "demo_seed");
-
-  if (shouldRefreshOldDemo) {
-    const seeded = seedDemoState();
-    seeded.preferences.locale =
-      preferences.locale === "zh-CN" || preferences.locale === "en-GB"
-        ? preferences.locale
-        : seeded.preferences.locale;
-    seeded.preferences.proUnlocked = preferences.proUnlocked === true;
-    return seeded;
-  }
-
   return {
     schemaVersion: SCHEMA_VERSION,
     appId: APP_ID,
     preferences: {
       locale: preferences.locale === "zh-CN" || preferences.locale === "en-GB" ? preferences.locale : base.preferences.locale,
       topN: typeof preferences.topN === "number" ? preferences.topN : 3,
-      proUnlocked: preferences.proUnlocked === true,
       showSafetyBanner: preferences.showSafetyBanner !== false,
-      hasSeenOnboarding: preferences.hasSeenOnboarding === true,
-      installHintDismissedAt:
-        typeof preferences.installHintDismissedAt === "string"
-          ? preferences.installHintDismissedAt
-          : undefined
+      hasSeenOnboarding: preferences.hasSeenOnboarding === true
     },
     foods,
     meta: {
       createdAt: typeof meta.createdAt === "string" ? meta.createdAt : base.meta.createdAt,
-      updatedAt: typeof meta.updatedAt === "string" ? meta.updatedAt : base.meta.updatedAt,
-      seededDemo: meta.seededDemo === true
+      updatedAt: typeof meta.updatedAt === "string" ? meta.updatedAt : base.meta.updatedAt
     }
   };
 }
@@ -132,23 +113,23 @@ function hasLocalStorage(): boolean {
 
 export function loadState(): AppStateEnvelope {
   if (!hasLocalStorage()) {
-    return seedDemoState();
+    return createDefaultState();
   }
 
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      const seeded = seedDemoState();
-      saveState(seeded);
-      return seeded;
+      const initial = createDefaultState();
+      saveState(initial);
+      return initial;
     }
 
     const parsed = JSON.parse(raw) as unknown;
     return migrateState(parsed);
   } catch {
-    const seeded = seedDemoState();
-    saveState(seeded);
-    return seeded;
+    const initial = createDefaultState();
+    saveState(initial);
+    return initial;
   }
 }
 

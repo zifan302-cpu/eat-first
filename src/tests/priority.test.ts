@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createFoodFromInput, markFoodEaten, snoozeFoodUntilTomorrow } from "../hooks/useFoodActions";
 import { getActiveFoods, getPriority, getTopFoods } from "../lib/priority";
-import { canAddActiveFood, unlockProGate } from "../lib/progate";
-import { createDefaultState } from "../lib/storage";
 import { toDateInputValue, addCalendarDays } from "../lib/dates";
 
 const today = new Date("2026-06-10T12:00:00.000Z");
@@ -57,13 +55,5 @@ describe("priority rules", () => {
 
     expect(eaten.status).toBe("eaten");
     expect(getActiveFoods([eaten])).toHaveLength(0);
-  });
-
-  it("blocks the 11th active item until demo Pro is unlocked", () => {
-    const state = createDefaultState(today);
-    state.foods = Array.from({ length: 10 }, (_, index) => food(`Food ${index}`, "none"));
-
-    expect(canAddActiveFood(state)).toBe(false);
-    expect(canAddActiveFood(unlockProGate(state, "EATFIRST-DEMO-PRO"))).toBe(true);
   });
 });

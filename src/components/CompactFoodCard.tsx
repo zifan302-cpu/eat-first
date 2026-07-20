@@ -1,14 +1,14 @@
 import { Check, Clock, Search, Snowflake, Trash2 } from "lucide-react";
 import type { FoodItem, PrimaryCta, PriorityResult } from "../types/food";
 import type { Messages } from "../i18n/en-GB";
-import { CATEGORY_ICONS } from "../lib/constants";
-import { daysFromToday } from "../lib/dates";
 import { getPriority } from "../lib/priority";
 import { cx } from "../lib/ui";
+import { FoodPortrait } from "./FoodPortrait";
 import { PriorityBadge } from "./PriorityBadge";
 
 interface CompactFoodCardProps {
   food: FoodItem;
+  rank: number;
   t: Messages;
   onEat(id: string): void;
   onFreeze(id: string): void;
@@ -24,38 +24,9 @@ const actionIcons: Record<PrimaryCta, typeof Check> = {
   later: Clock
 };
 
-function dateStatus(food: FoodItem, t: Messages): string {
-  if (food.dateLabelType === "none" || !food.labelDate) {
-    return t.priority.noDate;
-  }
-
-  const days = daysFromToday(food.labelDate);
-  if (typeof days !== "number") {
-    return food.labelDate;
-  }
-
-  if (food.dateLabelType === "opened") {
-    return `${t.dateTypes.opened} · ${food.labelDate}`;
-  }
-  if (days < 0) {
-    return `${Math.abs(days)}d past`;
-  }
-  if (days === 0) {
-    return t.form.today;
-  }
-  if (days === 1) {
-    return t.form.tomorrow;
-  }
-  return `+${days}d`;
-}
-
 function compactActions(priority: PriorityResult): [PrimaryCta, PrimaryCta] {
-  if (priority.verdict === "expired_use_by") {
-    return ["discard", "later"];
-  }
-  if (priority.verdict === "use_today") {
-    return ["eat", "freeze"];
-  }
+  if (priority.verdict === "expired_use_by") return ["discard", "later"];
+  if (priority.verdict === "use_today") return ["eat", "freeze"];
   if (priority.verdict === "use_soon") {
     return ["eat", priority.secondaryCtas.includes("freeze") ? "freeze" : "later"];
   }
@@ -66,14 +37,13 @@ function compactActions(priority: PriorityResult): [PrimaryCta, PrimaryCta] {
   ) {
     return ["check", "eat"];
   }
-  if (priority.verdict === "no_date") {
-    return ["later", "eat"];
-  }
+  if (priority.verdict === "no_date") return ["later", "eat"];
   return [priority.primaryCta, priority.secondaryCtas[0] ?? "later"];
 }
 
 export function CompactFoodCard({
   food,
+  rank,
   t,
   onEat,
   onFreeze,
@@ -82,8 +52,8 @@ export function CompactFoodCard({
 }: CompactFoodCardProps): JSX.Element {
   const priority = getPriority(food);
   const [primary, secondary] = compactActions(priority);
-  const explanation = t.priority[priority.explanationKey.split(".")[1] as keyof typeof t.priority];
-  const shortExplanation = explanation.split(".")[0];
+  const explanation =
+    t.priority[priority.explanationKey.split(".")[1] as keyof typeof t.priority];
 
   const handlers: Record<PrimaryCta, () => void> = {
     eat: () => onEat(food.id),
@@ -94,44 +64,42 @@ export function CompactFoodCard({
   };
 
   return (
-    <article className="rounded-md border border-stone-200 bg-white p-3 shadow-soft">
+    <article className="fresh-card animate-fresh-pop overflow-hidden p-3.5">
       <div className="flex gap-3">
-        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-md bg-leaf-50 text-2xl">
-          {CATEGORY_ICONS[food.category] ?? CATEGORY_ICONS.other}
-        </div>
+        <FoodPortrait food={food} rank={rank} />
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="min-w-0 break-words text-base font-extrabold leading-tight text-stone-950">
-              {food.name}
-            </h3>
+            <div className="min-w-0">
+              <h3 className="truncate font-editorial text-lg font-black tracking-tight text-ink">{food.name}</h3>
+              <p className="mt-0.5 text-xs font-bold text-ink-muted">
+                {t.dateTypes[food.dateLabelType]}
+                {food.labelDate ? ` · ${food.labelDate}` : ""}
+              </p>
+            </div>
             <PriorityBadge priority={priority} t={t} />
           </div>
-          <p className="mt-1 text-xs font-semibold text-stone-500">
-            {t.dateTypes[food.dateLabelType]} · {dateStatus(food, t)}
-          </p>
-          <p className="mt-1 overflow-hidden text-ellipsis whitespace-nowrap text-xs font-medium leading-5 text-stone-600">
-            {shortExplanation}
+          <p className="mt-2 line-clamp-2 text-xs font-medium leading-5 text-ink-muted">
+            {explanation}
           </p>
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
+      <div className="mt-3 grid grid-cols-2 gap-2">
         {[primary, secondary].map((action, index) => {
           const Icon = actionIcons[action];
-          const isPrimary = index === 0;
           return (
             <button
               key={`${action}-${index}`}
               type="button"
               onClick={handlers[action]}
               className={cx(
-                "flex min-h-10 items-center justify-center gap-1.5 rounded-md border px-3 text-sm font-bold",
-                isPrimary
-                  ? "border-leaf-500 bg-leaf-500 text-white"
-                  : "border-stone-200 bg-[#fffaf0] text-stone-700"
+                "flex min-h-11 items-center justify-center gap-2 rounded-[0.9rem] border px-3 text-sm font-extrabold transition active:translate-y-px",
+                index === 0
+                  ? "border-ink bg-ink text-paper"
+                  : "border-paper-line bg-paper text-ink"
               )}
             >
-              <Icon aria-hidden className="h-4 w-4" />
+              <Icon className="h-4 w-4" aria-hidden />
               {t.actions[action]}
             </button>
           );

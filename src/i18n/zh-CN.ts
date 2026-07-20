@@ -2,23 +2,25 @@ import type { Messages } from "./en-GB";
 
 export const zhCN: Messages = {
   app: {
-    name: "Eat First",
+    name: "冰箱小鲜队",
     subtitle: "在食物浪费前，先知道今天该处理什么。",
-    valueLine: "今天最该处理的冰箱 Top 3。",
-    version: "V1.1 移动端 PWA Demo"
+    valueLine: "一支帮你处理冰箱大事的小队。",
+    version: "V0.5 小鲜队住处"
   },
   nav: {
     home: "首页",
     add: "添加",
     fridge: "冰箱",
-    stats: "统计",
+    stats: "成果",
+    squad: "小队",
     settings: "设置"
   },
   pages: {
     homeTitle: "今天先吃什么",
     addTitle: "添加食物",
     fridgeTitle: "冰箱列表",
-    statsTitle: "本周成果",
+    statsTitle: "小队成长",
+    squadTitle: "小鲜队住处",
     settingsTitle: "设置"
   },
   actions: {
@@ -32,13 +34,13 @@ export const zhCN: Messages = {
     cancel: "取消",
     edit: "编辑",
     delete: "删除",
-    resetDemo: "重置 Demo",
     clearData: "清空本地数据",
-    unlock: "解锁 Demo",
     exportJson: "导出 JSON",
     importJson: "导入 JSON",
     dismiss: "关闭提示",
-    close: "关闭"
+    close: "关闭",
+    undo: "撤销",
+    start: "开始使用"
   },
   form: {
     name: "食物名称",
@@ -55,7 +57,6 @@ export const zhCN: Messages = {
     tomorrow: "明天",
     requiredDate: "这个日期类型需要选择日期。",
     requiredName: "请填写食物名称。",
-    proLimit: "免费 Demo 最多允许 10 个当前食物。输入 demo code 可解锁更多。",
     addedContinue: "已添加，可以继续添加下一个。",
     recentItems: "最近添加"
   },
@@ -119,9 +120,141 @@ export const zhCN: Messages = {
     noDate: "没有保存日期。除非没有更紧急食物，一般优先级最低。"
   },
   empty: {
-    top: "现在没有需要优先处理的当前食物。",
-    fridge: "当前没有食物。",
+    top: "冰箱暂时很平静。",
+    fridge: "冰箱准备好迎接第一件食物了。",
     stats: "使用操作后会显示记录。"
+  },
+  onboarding: {
+    eyebrow: "认识你的冰箱伙伴",
+    title: "让每份新鲜，都多一次被吃掉的机会。",
+    body: "冰箱小鲜队把复杂库存变成每天三个清晰决定，并认真庆祝每一次及时吃掉或冷冻。",
+    pointDecision: "每天只看最值得先处理的三件食物",
+    pointGame: "用真实行动推动小队成长",
+    pointPrivacy: "无需账号，数据只留在当前设备",
+    start: "打开我的冰箱"
+  },
+  home: {
+    morning: "今日鲜活任务",
+    missionTitle: "今天的拯救行动",
+    missionComplete: "任务完成，小队可以安心休息了。",
+    missionBody: "今天完成最多三个真正有用的冰箱决定。",
+    rescuedToday: "今日已拯救",
+    fridgeCount: "当前食物",
+    topTitle: "今天优先处理",
+    topBody: "根据标签类型、日期和开封时间在本地排序。",
+    emptyTitle: "等你的冰箱发出第一项任务",
+    emptyBody: "添加一件食物，小鲜队就会生成第一份今日计划。",
+    addFirst: "添加第一件食物"
+  },
+  game: {
+    level: "小队等级",
+    streak: "连续行动",
+    weeklyRescued: "本周拯救",
+    totalRescued: "累计拯救",
+    experience: "小队能量",
+    mission: "今日任务",
+    complete: "已完成",
+    progress: "进行中"
+  },
+  squad: {
+    eyebrow: "冰箱公寓",
+    intro: "你正在照料的食物伙伴，也有一个安静生活的地方。",
+    sceneLabel: "五位冰箱小鲜队成员待在他们的冰箱公寓里",
+    today: "住处今日状态",
+    missionComplete: "今天安心休息。",
+    missionInProgress: "大家在等今天的计划。",
+    quiet: "冰箱很安静，大家都在家。",
+    residents: "常住成员",
+    level: "小队等级",
+    viewProgress: "查看小队成长记录",
+    homeNoteTitle: "住处会跟着真实照料慢慢成长",
+    homeNoteBody: "目前小鲜队先安静生活在这里。以后，真实的冰箱行动会逐渐带来房间变化、收藏与轻互动。"
+  },
+  future: {
+    badge: "功能预留",
+    pending: "等待后续接入模型"
+  },
+  vision: {
+    eyebrow: "视觉录入",
+    title: "把一张照片变成冰箱草稿",
+    body: "未来可识别食材名、包装日期和大致数量，但每一项都由你确认。",
+    action: "查看视觉录入窗口",
+    dialogTitle: "先拍照，再逐项确认",
+    dialogBody: "模型只负责生成可编辑草稿，不会未经确认直接写入你的冰箱。",
+    stepCapture: "拍摄冰箱层架或食物包装",
+    stepReview: "核对识别出的名称、日期标签与数量",
+    stepSave: "逐项确认后再保存到本地冰箱",
+    boundary: "图片只应用于本次录入，也不能作为食物安全的判断依据。"
+  },
+  barcode: {
+    eyebrow: "条形码录入",
+    title: "扫一下包装，少填几项",
+    body: "通过条形码查询包装食品，再由你确认可编辑的名称、分量和日期后保存。",
+    action: "扫描条形码",
+    badge: "已可用",
+    dialogTitle: "扫描包装上的条形码",
+    dialogBody: "商品信息来自 Open Food Facts。草稿未经你确认，不会写入冰箱。",
+    cameraHint: "将后置摄像头对准 EAN、UPC 或 GS1 条形码。",
+    startCamera: "打开摄像头",
+    scanning: "正在扫描…",
+    orManual: "或手动输入编码",
+    codeLabel: "条形码",
+    codePlaceholder: "输入 EAN 或 UPC 编码",
+    lookup: "查询条形码",
+    lookingUp: "正在查询商品…",
+    found: "已找到商品",
+    notFound: "公共商品库中没有找到记录。条形码会被保留，你可以在表单中填写名称。",
+    error: "无法扫描或查询这个编码。请检查摄像头权限，或改为手动输入。",
+    useDraft: "使用这份可编辑草稿",
+    boundary: "条形码数据可能不完整，请亲自确认商品名称和包装日期。"
+  },
+  recipe: {
+    eyebrow: "AI 菜谱灵感",
+    title: "把已经有的食材变成一顿饭",
+    body: "优先使用需要处理的食材，再结合时间、人数与饮食限制给出少量实用方案。",
+    action: "生成菜谱灵感",
+    badge: "千问",
+    dialogTitle: "只给少量真正有用的方案",
+    dialogBody: "千问会根据优先食材和现实条件，提供两到三个可调整方案。",
+    currentFoods: "当前优先食材",
+    servings: "用餐人数",
+    maxTime: "最多用时",
+    minutes: "分钟",
+    dietaryNotes: "饮食要求",
+    dietaryPlaceholder: "素食、不含坚果、少辣……",
+    generate: "让千问给出方案",
+    generating: "正在生成方案…",
+    noFoods: "先添加一项当前食材，再生成菜谱。",
+    expiredExcluded: "已过 Use by 的食物会在发送给模型前自动排除。",
+    notConfigured: "服务端还没有配置千问。请将密钥和 API 地址写入 .env.local，然后重启应用。",
+    error: "菜谱生成失败，请检查服务端配置后重试。",
+    option: "方案",
+    ingredients: "所需食材",
+    steps: "做法",
+    boundary: "菜谱建议不能判断食品安全，Use by 标签与官方建议始终优先。"
+  },
+  quickAdd: {
+    eyebrow: "快捷保鲜架",
+    title: "添加常见食物",
+    body: "先选一个熟悉食材，只修改这次不同的地方。",
+    recent: "最近使用"
+  },
+  undo: {
+    added: "已添加",
+    eaten: "已标记吃掉",
+    frozen: "已标记冷冻",
+    discarded: "已标记丢弃",
+    deleted: "已删除",
+    later: "已移到明天"
+  },
+  historyActions: {
+    created: "添加",
+    updated: "更新",
+    eaten: "吃掉",
+    frozen: "冷冻",
+    discarded: "丢弃",
+    snoozed: "移到明天",
+    restored: "恢复"
   },
   fridge: {
     editTitle: "编辑食物",
@@ -133,49 +266,41 @@ export const zhCN: Messages = {
     frozen: "已冷冻",
     discarded: "已丢弃",
     expiringSoon: "当前快到期",
-    estimatedSaved: "估算避免浪费",
-    savedDisclaimer: "估算值仅用于反馈，不代表真实节省金额。",
-    recent: "最近操作"
+    estimatedSaved: "及时拯救",
+    savedDisclaimer: "小队成长只根据当前设备记录的真实操作计算。",
+    recent: "最近行动记录",
+    weeklyMission: "本周小结",
+    noPenalty: "丢弃不会扣分，它只会帮助小队把下一次计划做得更好。"
   },
   settings: {
     language: "语言",
     installTitle: "安装到 iPhone",
-    demoUnlock: "Demo 解锁",
     data: "数据管理",
     foodSafety: "食品安全说明",
     about: "关于",
     zh: "中文",
     en: "English",
-    proStatusFree: "免费 Demo",
-    proStatusUnlocked: "Demo 已解锁",
-    proCodePlaceholder: "输入 demo code",
-    resetNote: "恢复 15 个食物的 Demo 冰箱和偏好设置。",
     clearNote: "删除此浏览器中的所有本地数据。",
     exportNote: "JSON 只保存在本机，除非你主动分享。",
-    importNote: "导入会替换当前本地 Demo 状态。",
-    aboutBody: "Eat First 是一个本地优先的 PWA Demo，所有数据只保存在当前浏览器。"
+    importNote: "导入会替换当前本地数据。",
+    importSuccess: "数据已导入。",
+    importError: "导入失败，请选择有效的 Eat First JSON 导出数据。",
+    aboutBody: "冰箱小鲜队是一款本地优先的冰箱管理伙伴，所有数据只保存在当前浏览器。"
   },
   safety: {
     title: "食品安全边界",
     body: "本工具仅用于提醒和排序，不能判断食品是否安全。请始终以包装说明和官方食品安全建议为准。",
     zhBody: "本工具仅用于提醒和排序，不能判断食品是否安全。请始终以包装说明和官方食品安全建议为准。"
   },
-  pro: {
-    title: "Demo 解锁",
-    body: "这是本地 demo 解锁，不是真实支付。",
-    limit: "免费 Demo 最多允许 10 个当前食物。",
-    success: "Demo 已在本设备解锁。",
-    invalid: "Demo code 不匹配。"
-  },
   install: {
-    title: "安装 Eat First",
+    title: "安装冰箱小鲜队",
     body: "请用 iPhone Safari 打开部署后的链接，然后添加到主屏幕。",
     steps: [
       "用 iPhone Safari 打开部署后的链接。",
       "点击 Safari 底部分享按钮。",
       "选择“添加到主屏幕”。",
       "点击“添加”。",
-      "之后从桌面图标打开 Eat First。"
+      "之后从桌面图标打开冰箱小鲜队。"
     ]
   }
 };

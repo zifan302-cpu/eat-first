@@ -1,14 +1,14 @@
 {
   "id": "/",
-  "name": "Eat First",
-  "short_name": "Eat First",
-  "description": "Know what to eat first before food goes to waste.",
+  "name": "冰箱小鲜队 · Fresh Squad",
+  "short_name": "小鲜队",
+  "description": "每天帮你找出最值得先处理的食物。",
   "start_url": "/#/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#ffffff",
-  "theme_color": "#1f7a4f",
+  "background_color": "#F7EEDC",
+  "theme_color": "#203D2E",
   "icons": [
     {
       "src": "/icons/icon-192.png",

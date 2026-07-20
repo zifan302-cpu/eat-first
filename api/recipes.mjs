@@ -1,0 +1,9 @@
+import { handleApiRequest, sendJson } from "../server/api.mjs";
+
+export const config = { maxDuration: 60 };
+
+export default async function handler(request, response) {
+  if (!(await handleApiRequest(request, response))) {
+    sendJson(response, 404, { code: "API_NOT_FOUND" });
+  }
+}

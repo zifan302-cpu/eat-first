@@ -1,11 +1,11 @@
 import { Check, Clock, Pencil, Search, Snowflake, Trash2 } from "lucide-react";
 import type { FoodItem, PrimaryCta } from "../types/food";
 import type { Messages } from "../i18n/en-GB";
-import { CATEGORY_ICONS } from "../lib/constants";
 import { daysFromToday } from "../lib/dates";
 import { getPriority } from "../lib/priority";
 import { cx } from "../lib/ui";
 import { PriorityBadge } from "./PriorityBadge";
+import { FoodPortrait } from "./FoodPortrait";
 
 interface FoodCardProps {
   food: FoodItem;
@@ -87,19 +87,17 @@ export function FoodCard({
   };
 
   return (
-    <article className="rounded-md border border-stone-200 bg-white p-4 shadow-soft">
+    <article className="fresh-card overflow-hidden p-4">
       <div className="flex items-start gap-3">
-        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-md bg-leaf-50 text-2xl">
-          {CATEGORY_ICONS[food.category] ?? CATEGORY_ICONS.other}
-        </div>
+        <FoodPortrait food={food} size="md" />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="min-w-0 break-words text-lg font-extrabold leading-tight text-stone-950">
+            <h3 className="min-w-0 break-words font-editorial text-lg font-black leading-tight tracking-tight text-ink">
               {food.name}
             </h3>
             <PriorityBadge priority={priority} t={t} />
           </div>
-          <p className="mt-1 text-sm font-semibold text-stone-500">
+          <p className="mt-1 text-sm font-medium text-ink-muted">
             {t.dateTypes[food.dateLabelType]} · {dateStatus(food, t)}
           </p>
         </div>
@@ -110,7 +108,7 @@ export function FoodCard({
                 type="button"
                 aria-label={t.actions.edit}
                 onClick={() => onEdit(food)}
-                className="grid h-9 w-9 place-items-center rounded-md text-stone-500 hover:bg-stone-100"
+                className="grid h-9 w-9 place-items-center rounded-xl text-ink-muted hover:bg-paper"
               >
                 <Pencil aria-hidden className="h-4 w-4" />
               </button>
@@ -120,7 +118,7 @@ export function FoodCard({
                 type="button"
                 aria-label={t.actions.delete}
                 onClick={() => onDelete(food.id)}
-                className="grid h-9 w-9 place-items-center rounded-md text-stone-500 hover:bg-stone-100"
+                className="grid h-9 w-9 place-items-center rounded-xl text-ink-muted hover:bg-paper"
               >
                 <Trash2 aria-hidden className="h-4 w-4" />
               </button>
@@ -129,10 +127,10 @@ export function FoodCard({
         ) : null}
       </div>
 
-      <p className="mt-3 text-sm leading-6 text-stone-600">{explanation}</p>
+      <p className="mt-3 text-sm leading-6 text-ink-muted">{explanation}</p>
 
       {food.quantityText || food.note ? (
-        <p className="mt-2 text-xs font-medium text-stone-500">
+        <p className="mt-2 text-xs font-medium text-ink-muted">
           {[food.quantityText, food.note].filter(Boolean).join(" · ")}
         </p>
       ) : null}
@@ -147,10 +145,10 @@ export function FoodCard({
               type="button"
               onClick={handlers[action]}
               className={cx(
-                "flex min-h-11 items-center justify-center gap-2 rounded-md border px-3 text-sm font-bold",
+                "flex min-h-11 items-center justify-center gap-2 rounded-[0.9rem] border px-3 text-sm font-extrabold transition active:translate-y-px",
                 isPrimary
-                  ? "border-leaf-500 bg-leaf-500 text-white"
-                  : "border-stone-200 bg-white text-stone-700"
+                  ? "border-ink bg-ink text-paper"
+                  : "border-paper-line bg-paper text-ink"
               )}
             >
               <Icon aria-hidden className="h-4 w-4" />

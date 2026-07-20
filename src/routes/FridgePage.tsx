@@ -3,6 +3,7 @@ import type { DateLabelType, FoodItem } from "../types/food";
 import { EmptyState } from "../components/EmptyState";
 import { FoodCard } from "../components/FoodCard";
 import { FoodForm } from "../components/FoodForm";
+import { PageHeader } from "../components/PageHeader";
 import { useAppState } from "../hooks/useAppState";
 import { useFoodActions } from "../hooks/useFoodActions";
 import { useLocale } from "../hooks/useLocale";
@@ -26,23 +27,24 @@ export function FridgePage(): JSX.Element {
   }, [filter, state.foods]);
 
   return (
-    <div className="space-y-4">
-      <header>
-        <h1 className="text-3xl font-extrabold leading-tight">{t.pages.fridgeTitle}</h1>
-        <p className="mt-2 text-sm font-medium leading-6 text-stone-600">{t.fridge.activeOnly}</p>
-      </header>
+    <div className="space-y-5">
+      <PageHeader
+        eyebrow={t.app.name}
+        title={t.pages.fridgeTitle}
+        body={`${t.fridge.activeOnly} · ${foods.length}`}
+      />
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="scrollbar-none flex gap-2 overflow-x-auto pb-1">
         {filters.map((item) => (
           <button
             key={item}
             type="button"
             onClick={() => setFilter(item)}
             className={cx(
-              "min-h-10 shrink-0 rounded-md border px-3 text-sm font-bold",
+              "min-h-9 shrink-0 rounded-full border px-3.5 text-xs font-black transition",
               filter === item
-                ? "border-leaf-500 bg-leaf-50 text-leaf-700"
-                : "border-stone-200 bg-white text-stone-600"
+                ? "border-ink bg-ink text-paper"
+                : "border-paper-line bg-paper-soft text-ink-muted"
             )}
           >
             {item === "all" ? t.filters.all : t.filters[item]}
@@ -70,14 +72,14 @@ export function FridgePage(): JSX.Element {
             />
           ))
         ) : (
-          <EmptyState title={t.empty.fridge} />
+          <EmptyState title={t.empty.fridge} character="broccoli" />
         )}
       </section>
 
       {editing ? (
-        <div className="fixed inset-0 z-40 flex items-end bg-black/35 px-4 pb-4 sm:items-center sm:justify-center">
-          <section className="mx-auto max-h-[88vh] w-full max-w-md overflow-y-auto rounded-t-md bg-[#f8faf5] p-4 shadow-soft sm:rounded-md">
-            <h2 className="mb-4 text-xl font-extrabold">{t.fridge.editTitle}</h2>
+        <div className="fixed inset-0 z-40 flex items-end bg-ink/38 px-4 pb-4 sm:items-center sm:justify-center">
+          <section className="paper-canvas mx-auto max-h-[88vh] w-full max-w-md overflow-y-auto rounded-t-[1.6rem] border border-paper-line p-4 shadow-lift sm:rounded-[1.6rem]">
+            <h2 className="mb-4 font-editorial text-xl font-black tracking-tight text-ink">{t.fridge.editTitle}</h2>
             <FoodForm
               initial={editing}
               locale={locale}

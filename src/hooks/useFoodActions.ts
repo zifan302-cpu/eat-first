@@ -5,11 +5,10 @@ import type {
   FoodActionType,
   FoodCategory,
   FoodItem,
-  DateLabelType
+  DateLabelType,
+  FoodSource
 } from "../types/food";
-import { canAddActiveFood } from "../lib/progate";
-import { createFoodItem } from "../lib/sampleData";
-import { seedDemoState } from "../lib/storage";
+import { createFoodItem } from "../lib/foods";
 import { isoNow, toDateInputValue } from "../lib/dates";
 import { normalizeFoodName } from "../lib/nameNormalization";
 import { useAppState } from "./useAppState";
@@ -21,7 +20,9 @@ export interface AddFoodInput {
   labelDate?: string;
   openedShelfLifeDays?: number;
   quantityText?: string;
+  barcode?: string;
   note?: string;
+  source?: FoodSource;
 }
 
 export interface UpdateFoodInput extends Partial<AddFoodInput> {}
@@ -34,14 +35,6 @@ export interface UseFoodActions {
   markFrozen(id: string): void;
   markDiscarded(id: string): void;
   snoozeUntilTomorrow(id: string): void;
-  resetDemo(): void;
-}
-
-export class ProLimitError extends Error {
-  constructor() {
-    super("PRO_LIMIT");
-    this.name = "ProLimitError";
-  }
 }
 
 function actionId(type: FoodActionType, now: Date): string {
@@ -72,9 +65,10 @@ export function createFoodFromInput(input: AddFoodInput, now = new Date()): Food
           ? input.openedShelfLifeDays ?? (input.category === "leftovers" ? 2 : 3)
           : undefined,
       quantityText: input.quantityText?.trim() || undefined,
+      barcode: input.barcode?.trim() || undefined,
       note: input.note?.trim() || undefined
     },
-    "manual",
+    input.source ?? "manual",
     now
   );
 }
@@ -161,21 +155,21 @@ export function snoozeFoodUntilTomorrow(foods: FoodItem[], id: string, now = new
 }
 
 export function useFoodActions(): UseFoodActions {
-  const { setState, state } = useAppState();
+  const { commitState, setState, state } = useAppState();
+  const stateFoodName = (id: string) =>
+    state.foods.find((food) => food.id === id)?.name ?? "Food";
 
   return useMemo(
     () => ({
       addFood(input) {
-        if (!canAddActiveFood(state)) {
-          throw new ProLimitError();
-        }
-
-        setState((current) => {
-          return {
+        const food = createFoodFromInput(input);
+        commitState(
+          (current) => ({
             ...current,
-            foods: [createFoodFromInput(input), ...current.foods]
-          };
-        });
+            foods: [food, ...current.foods]
+          }),
+          { action: "added", name: food.name }
+        );
       },
       updateFood(id, patch) {
         setState((current) => ({
@@ -184,41 +178,52 @@ export function useFoodActions(): UseFoodActions {
         }));
       },
       deleteFood(id) {
-        setState((current) => ({
-          ...current,
-          foods: current.foods.filter((food) => food.id !== id)
-        }));
+        const foodName = stateFoodName(id);
+        commitState(
+          (current) => ({
+            ...current,
+            foods: current.foods.filter((food) => food.id !== id)
+          }),
+          { action: "deleted", name: foodName }
+        );
       },
       markEaten(id) {
-        setState((current) => ({
-          ...current,
-          foods: markFoodEaten(current.foods, id)
-        }));
+        commitState(
+          (current) => ({
+            ...current,
+            foods: markFoodEaten(current.foods, id)
+          }),
+          { action: "eaten", name: stateFoodName(id) }
+        );
       },
       markFrozen(id) {
-        setState((current) => ({
-          ...current,
-          foods: markFoodFrozen(current.foods, id)
-        }));
+        commitState(
+          (current) => ({
+            ...current,
+            foods: markFoodFrozen(current.foods, id)
+          }),
+          { action: "frozen", name: stateFoodName(id) }
+        );
       },
       markDiscarded(id) {
-        setState((current) => ({
-          ...current,
-          foods: markFoodDiscarded(current.foods, id)
-        }));
+        commitState(
+          (current) => ({
+            ...current,
+            foods: markFoodDiscarded(current.foods, id)
+          }),
+          { action: "discarded", name: stateFoodName(id) }
+        );
       },
       snoozeUntilTomorrow(id) {
-        setState((current) => ({
-          ...current,
-          foods: snoozeFoodUntilTomorrow(current.foods, id)
-        }));
-      },
-      resetDemo() {
-        const next = seedDemoState();
-        next.preferences.locale = state.preferences.locale;
-        setState(next);
+        commitState(
+          (current) => ({
+            ...current,
+            foods: snoozeFoodUntilTomorrow(current.foods, id)
+          }),
+          { action: "later", name: stateFoodName(id) }
+        );
       }
     }),
-    [setState, state]
+    [commitState, setState, state.foods]
   );
 }

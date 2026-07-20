@@ -83,7 +83,9 @@ export function FoodForm({
       labelDate: dateLabelType === "none" ? undefined : labelDate,
       openedShelfLifeDays: dateLabelType === "opened" ? openedShelfLifeDays : undefined,
       quantityText,
-      note
+      barcode: initial?.barcode,
+      note,
+      source: initial?.source
     };
   }
 
@@ -112,19 +114,25 @@ export function FoodForm({
       }}
     >
       <label className="block">
-        <span className="mb-2 block text-sm font-bold text-stone-700">{t.form.name}</span>
+        <span className="mb-2 block text-sm font-black text-ink">{t.form.name}</span>
         <input
           value={name}
           onChange={(event) => updateName(event.target.value)}
           placeholder={t.form.namePlaceholder}
-          className="min-h-12 w-full rounded-md border border-stone-200 bg-white px-3 text-base font-medium outline-none focus:border-leaf-500 focus:ring-2 focus:ring-leaf-100"
+          className="fresh-field"
         />
       </label>
 
+      {initial?.barcode ? (
+        <p className="rounded-[0.9rem] border border-paper-line bg-paper px-3 py-2 text-xs font-bold text-ink-muted">
+          {t.barcode.codeLabel}: <span className="font-mono text-ink">{initial.barcode}</span>
+        </p>
+      ) : null}
+
       {recentSuggestions.length > 0 ? (
         <div>
-          <p className="mb-2 text-sm font-bold text-stone-700">{t.form.recentItems}</p>
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          <p className="mb-2 text-sm font-black text-ink">{t.quickAdd.recent}</p>
+          <div className="scrollbar-none flex gap-2 overflow-x-auto pb-1">
             {recentSuggestions.map((item) => (
               <button
                 key={item.normalizedName}
@@ -138,7 +146,7 @@ export function FoodForm({
                   }
                   setCategoryTouched(false);
                 }}
-                className="min-h-9 shrink-0 rounded-full border border-stone-200 bg-white px-3 text-sm font-semibold text-stone-700"
+                className="min-h-9 shrink-0 rounded-full border border-paper-line bg-paper px-3 text-xs font-bold text-leaf-700"
               >
                 {item.name}
               </button>
@@ -148,7 +156,7 @@ export function FoodForm({
       ) : null}
 
       <label className="block">
-        <span className="mb-2 block text-sm font-bold text-stone-700">{t.form.category}</span>
+        <span className="mb-2 block text-sm font-black text-ink">{t.form.category}</span>
         <CategorySelect
           value={category}
           locale={locale}
@@ -160,7 +168,7 @@ export function FoodForm({
       </label>
 
       <div>
-        <span className="mb-2 block text-sm font-bold text-stone-700">
+        <span className="mb-2 block text-sm font-black text-ink">
           {t.form.dateLabelType}
         </span>
         <DateLabelSegment
@@ -178,12 +186,12 @@ export function FoodForm({
       {dateLabelType !== "none" ? (
         <div className="space-y-2">
           <label className="block">
-            <span className="mb-2 block text-sm font-bold text-stone-700">{t.form.labelDate}</span>
+            <span className="mb-2 block text-sm font-black text-ink">{t.form.labelDate}</span>
             <input
               type="date"
               value={labelDate}
               onChange={(event) => setLabelDate(event.target.value)}
-              className="min-h-12 w-full rounded-md border border-stone-200 bg-white px-3 text-base font-medium outline-none focus:border-leaf-500 focus:ring-2 focus:ring-leaf-100"
+              className="fresh-field"
             />
           </label>
           <QuickDateChips value={labelDate} onChange={setLabelDate} t={t} />
@@ -192,7 +200,7 @@ export function FoodForm({
 
       {dateLabelType === "opened" ? (
         <div>
-          <span className="mb-2 block text-sm font-bold text-stone-700">
+          <span className="mb-2 block text-sm font-black text-ink">
             {t.form.openedShelfLifeDays}
           </span>
           <div className="grid grid-cols-5 gap-2">
@@ -202,10 +210,10 @@ export function FoodForm({
                 type="button"
                 onClick={() => setOpenedShelfLifeDays(days)}
                 className={cx(
-                  "min-h-10 rounded-md border px-1 text-sm font-semibold",
+                  "min-h-10 rounded-[0.8rem] border px-1 text-sm font-bold",
                   openedShelfLifeDays === days
-                    ? "border-leaf-500 bg-leaf-50 text-leaf-700"
-                    : "border-stone-200 bg-white text-stone-600"
+                    ? "border-ink bg-ink text-paper"
+                    : "border-paper-line bg-paper text-ink-muted"
                 )}
               >
                 {days}d
@@ -216,28 +224,28 @@ export function FoodForm({
       ) : null}
 
       <label className="block">
-        <span className="mb-2 block text-sm font-bold text-stone-700">{t.form.quantityText}</span>
+        <span className="mb-2 block text-sm font-black text-ink">{t.form.quantityText}</span>
         <input
           value={quantityText}
           onChange={(event) => setQuantityText(event.target.value)}
           placeholder={t.form.quantityPlaceholder}
-          className="min-h-12 w-full rounded-md border border-stone-200 bg-white px-3 text-base font-medium outline-none focus:border-leaf-500 focus:ring-2 focus:ring-leaf-100"
+          className="fresh-field"
         />
       </label>
 
       <label className="block">
-        <span className="mb-2 block text-sm font-bold text-stone-700">{t.form.note}</span>
+        <span className="mb-2 block text-sm font-black text-ink">{t.form.note}</span>
         <textarea
           value={note}
           onChange={(event) => setNote(event.target.value)}
           placeholder={t.form.notePlaceholder}
           rows={3}
-          className="w-full rounded-md border border-stone-200 bg-white px-3 py-3 text-base font-medium outline-none focus:border-leaf-500 focus:ring-2 focus:ring-leaf-100"
+          className="w-full rounded-[1rem] border border-paper-line bg-paper-soft px-4 py-3 text-base font-semibold text-ink outline-none transition focus:border-leaf-500 focus:ring-4 focus:ring-leaf-100/70"
         />
       </label>
 
       {error ? (
-        <p className="rounded-md border border-tomato/20 bg-tomato/10 px-3 py-2 text-sm font-semibold text-tomato">
+        <p className="rounded-[1rem] border border-tomato/20 bg-[#F3DDD3] px-4 py-3 text-sm font-bold text-tomato">
           {error}
         </p>
       ) : null}
@@ -247,7 +255,7 @@ export function FoodForm({
           <button
             type="button"
             onClick={onCancel}
-            className="min-h-12 rounded-md border border-stone-200 bg-white px-4 text-sm font-bold text-stone-700"
+            className="fresh-button-secondary"
           >
             {t.actions.cancel}
           </button>
@@ -256,7 +264,7 @@ export function FoodForm({
           <button
             type="button"
             onClick={() => submit("continue")}
-            className="min-h-12 rounded-md border border-leaf-500 bg-white px-4 text-sm font-bold text-leaf-700"
+            className="fresh-button-secondary border-leaf-500 text-leaf-700"
           >
             {continueLabel}
           </button>
@@ -264,7 +272,7 @@ export function FoodForm({
         <button
           type="submit"
           className={cx(
-            "min-h-12 rounded-md bg-leaf-500 px-4 text-sm font-bold text-white",
+            "fresh-button-primary",
             onCancel && continueLabel ? "col-span-2" : ""
           )}
         >

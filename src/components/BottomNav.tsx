@@ -1,13 +1,13 @@
-import { BarChart3, Home, List, Plus, Settings } from "lucide-react";
+import { House, Refrigerator, Plus, Settings, Sprout } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import type { Messages } from "../i18n/en-GB";
 import { cx } from "../lib/ui";
 
 const links = [
-  { to: "/", labelKey: "home", icon: Home },
+  { to: "/", labelKey: "home", icon: House },
   { to: "/add", labelKey: "add", icon: Plus },
-  { to: "/fridge", labelKey: "fridge", icon: List },
-  { to: "/stats", labelKey: "stats", icon: BarChart3 },
+  { to: "/fridge", labelKey: "fridge", icon: Refrigerator },
+  { to: "/squad", labelKey: "squad", icon: Sprout },
   { to: "/settings", labelKey: "settings", icon: Settings }
 ] as const;
 
@@ -17,8 +17,8 @@ interface BottomNavProps {
 
 export function BottomNav({ t }: BottomNavProps): JSX.Element {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-white/95 px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 backdrop-blur">
-      <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
+    <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md border-t border-paper-line bg-paper-soft/96 px-3 pt-2 pb-[max(env(safe-area-inset-bottom),0.55rem)] shadow-[0_-5px_0_rgba(32,61,46,0.035)]">
+      <div className="grid grid-cols-5 gap-0.5">
         {links.map(({ to, labelKey, icon: Icon }) => (
           <NavLink
             key={to}
@@ -26,12 +26,14 @@ export function BottomNav({ t }: BottomNavProps): JSX.Element {
             end={to === "/"}
             className={({ isActive }) =>
               cx(
-                "flex min-h-14 flex-col items-center justify-center rounded-md text-[0.72rem] font-semibold transition",
-                isActive ? "bg-leaf-50 text-leaf-700" : "text-stone-500"
+                "relative flex min-h-14 flex-col items-center justify-center rounded-[0.95rem] text-[0.68rem] font-extrabold transition",
+                isActive
+                  ? "bg-leaf-100 text-leaf-700"
+                  : "text-ink-muted hover:bg-paper"
               )
             }
           >
-            <Icon aria-hidden className="mb-1 h-5 w-5" />
+            <Icon aria-hidden className="mb-1 h-[1.15rem] w-[1.15rem]" strokeWidth={2.2} />
             <span>{t.nav[labelKey]}</span>
           </NavLink>
         ))}

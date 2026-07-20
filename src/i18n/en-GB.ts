@@ -1,22 +1,24 @@
 export const enGB = {
   app: {
-    name: "Eat First",
+    name: "Fresh Squad",
     subtitle: "Know what to handle before food goes to waste.",
-    valueLine: "Your top fridge decisions for today.",
-    version: "V1.1 mobile PWA demo"
+    valueLine: "A small team for your biggest fridge decisions.",
+    version: "V0.5 Squad Home"
   },
   nav: {
     home: "Home",
     add: "Add",
     fridge: "Fridge",
-    stats: "Stats",
+    stats: "Wins",
+    squad: "Squad",
     settings: "Settings"
   },
   pages: {
     homeTitle: "Today Eat First",
     addTitle: "Add food",
     fridgeTitle: "Fridge",
-    statsTitle: "This Week",
+    statsTitle: "Squad progress",
+    squadTitle: "The squad is home",
     settingsTitle: "Settings"
   },
   actions: {
@@ -30,13 +32,13 @@ export const enGB = {
     cancel: "Cancel",
     edit: "Edit",
     delete: "Delete",
-    resetDemo: "Reset demo",
     clearData: "Clear local data",
-    unlock: "Unlock demo",
     exportJson: "Export JSON",
     importJson: "Import JSON",
     dismiss: "Dismiss",
-    close: "Close"
+    close: "Close",
+    undo: "Undo",
+    start: "Get started"
   },
   form: {
     name: "Food name",
@@ -53,7 +55,6 @@ export const enGB = {
     tomorrow: "Tomorrow",
     requiredDate: "Choose a date for this label type.",
     requiredName: "Add a food name.",
-    proLimit: "Free demo allows 10 active items. Use the demo code to unlock more.",
     addedContinue: "Added. You can add the next item.",
     recentItems: "Recent items"
   },
@@ -117,9 +118,141 @@ export const enGB = {
     noDate: "No date saved. Lower priority unless the fridge is otherwise clear."
   },
   empty: {
-    top: "No current food needs attention right now.",
-    fridge: "Your current fridge list is empty.",
+    top: "The fridge is quiet for now.",
+    fridge: "Your fridge is ready for its first item.",
     stats: "Actions will appear after you use the app."
+  },
+  onboarding: {
+    eyebrow: "Meet your fridge crew",
+    title: "Fresh food deserves a fighting chance.",
+    body: "Fresh Squad turns a busy fridge into three clear decisions, then celebrates every item you eat or freeze in time.",
+    pointDecision: "See the three foods worth handling first",
+    pointGame: "Help the squad grow through real actions",
+    pointPrivacy: "No account — your data stays on this device",
+    start: "Open my fridge"
+  },
+  home: {
+    morning: "Fresh mission",
+    missionTitle: "Today’s rescue run",
+    missionComplete: "Mission complete — the squad can rest.",
+    missionBody: "Handle up to three useful fridge decisions today.",
+    rescuedToday: "rescued today",
+    fridgeCount: "current foods",
+    topTitle: "Eat these first",
+    topBody: "Ranked locally from label type, date and opened time.",
+    emptyTitle: "Ready when your fridge is",
+    emptyBody: "Add one food and the squad will build your first daily plan.",
+    addFirst: "Add the first food"
+  },
+  game: {
+    level: "Squad level",
+    streak: "day rhythm",
+    weeklyRescued: "rescued this week",
+    totalRescued: "all-time rescues",
+    experience: "squad energy",
+    mission: "Daily mission",
+    complete: "Complete",
+    progress: "In progress"
+  },
+  squad: {
+    eyebrow: "Fridge apartment",
+    intro: "A quiet place for the foods you are helping to look after.",
+    sceneLabel: "Five Fresh Squad residents resting in their fridge apartment",
+    today: "Today at home",
+    missionComplete: "The squad can rest easy.",
+    missionInProgress: "They are waiting for today’s plan.",
+    quiet: "The fridge is quiet. Everyone is home.",
+    residents: "residents",
+    level: "squad level",
+    viewProgress: "View the squad record",
+    homeNoteTitle: "A home that grows with real care",
+    homeNoteBody: "For now, the squad simply lives here. Later, useful fridge actions can gradually bring new room details and gentle interactions."
+  },
+  future: {
+    badge: "Planned",
+    pending: "Model connection comes next"
+  },
+  vision: {
+    eyebrow: "Visual entry",
+    title: "Turn a photo into a fridge draft",
+    body: "A future shortcut for food names, package dates and rough quantities — always reviewed by you.",
+    action: "Preview visual entry",
+    dialogTitle: "Photograph first, confirm everything",
+    dialogBody: "The model will prepare an editable draft rather than writing directly to your fridge.",
+    stepCapture: "Photograph the fridge shelf or food package",
+    stepReview: "Review the detected name, date label and amount",
+    stepSave: "Confirm each item before saving it locally",
+    boundary: "Images should be processed only for this task and never be treated as proof that food is safe."
+  },
+  barcode: {
+    eyebrow: "Barcode entry",
+    title: "Scan a pack instead of typing it",
+    body: "Look up a packaged food by barcode, then review the editable name, amount and date before saving.",
+    action: "Scan a barcode",
+    badge: "Available",
+    dialogTitle: "Scan the code on the package",
+    dialogBody: "Product details are looked up from Open Food Facts. Nothing is saved until you confirm the draft.",
+    cameraHint: "Point the rear camera at an EAN, UPC or GS1 barcode.",
+    startCamera: "Open camera",
+    scanning: "Scanning…",
+    orManual: "or enter the number",
+    codeLabel: "Barcode",
+    codePlaceholder: "EAN or UPC number",
+    lookup: "Look up barcode",
+    lookingUp: "Looking up product…",
+    found: "Product found",
+    notFound: "No public product record was found. The barcode is kept and you can type the name in the form.",
+    error: "The code could not be scanned or looked up. Check camera permission or enter the number manually.",
+    useDraft: "Use this editable draft",
+    boundary: "Barcode data can be incomplete. Always confirm the product name and package date yourself."
+  },
+  recipe: {
+    eyebrow: "AI meal ideas",
+    title: "Turn what is already here into a meal",
+    body: "Start with foods that need attention, then adapt a few practical ideas to your time and portions.",
+    action: "Generate recipe ideas",
+    badge: "Qwen",
+    dialogTitle: "A few useful ideas, not an endless feed",
+    dialogBody: "Qwen uses your priority foods and practical constraints to suggest two or three options.",
+    currentFoods: "Current priority foods",
+    servings: "Servings",
+    maxTime: "Max time",
+    minutes: "min",
+    dietaryNotes: "Dietary notes",
+    dietaryPlaceholder: "Vegetarian, no nuts, mild spice…",
+    generate: "Ask Qwen for ideas",
+    generating: "Generating ideas…",
+    noFoods: "Add an active food before asking for a recipe.",
+    expiredExcluded: "Expired use-by items are excluded before anything is sent to the model.",
+    notConfigured: "Qwen is not configured on the server yet. Add the key and API base URL to .env.local, then restart the app.",
+    error: "Recipe generation failed. Check the server configuration and try again.",
+    option: "Option",
+    ingredients: "Ingredients",
+    steps: "Method",
+    boundary: "Recipe suggestions cannot judge food safety. Use-by labels and official guidance still take priority."
+  },
+  quickAdd: {
+    eyebrow: "Quick shelf",
+    title: "Add a familiar food",
+    body: "Choose a starter and adjust only what changed.",
+    recent: "Recently used"
+  },
+  undo: {
+    added: "added",
+    eaten: "marked eaten",
+    frozen: "marked frozen",
+    discarded: "marked discarded",
+    deleted: "deleted",
+    later: "moved to tomorrow"
+  },
+  historyActions: {
+    created: "Added",
+    updated: "Updated",
+    eaten: "Eaten",
+    frozen: "Frozen",
+    discarded: "Discarded",
+    snoozed: "Moved to tomorrow",
+    restored: "Restored"
   },
   fridge: {
     editTitle: "Edit food",
@@ -131,49 +264,41 @@ export const enGB = {
     frozen: "Frozen",
     discarded: "Discarded",
     expiringSoon: "Expiring soon",
-    estimatedSaved: "Estimated saved",
-    savedDisclaimer: "Estimated savings are for feedback only and do not represent actual money saved.",
-    recent: "Recent actions"
+    estimatedSaved: "Rescued",
+    savedDisclaimer: "Squad progress is based on the actions recorded on this device.",
+    recent: "Recent squad log",
+    weeklyMission: "This week",
+    noPenalty: "Discarded items never remove points. They help make the next plan better."
   },
   settings: {
     language: "Language",
     installTitle: "Install on iPhone",
-    demoUnlock: "Demo Unlock",
     data: "Data",
     foodSafety: "Food Safety Disclaimer",
     about: "About",
     zh: "Chinese",
     en: "English",
-    proStatusFree: "Free demo",
-    proStatusUnlocked: "Demo unlocked",
-    proCodePlaceholder: "Enter demo code",
-    resetNote: "Restores the 15-item demo fridge and preferences.",
     clearNote: "Removes all local data from this browser.",
     exportNote: "JSON stays on this device unless you share it.",
-    importNote: "Import replaces the current local demo state.",
-    aboutBody: "Eat First is a local-first PWA demo. All data stays in this browser."
+    importNote: "Import replaces the current local state.",
+    importSuccess: "Data imported.",
+    importError: "Import failed. Choose a valid Eat First JSON export.",
+    aboutBody: "Fresh Squad is a local-first fridge companion. All data stays in this browser."
   },
   safety: {
     title: "Food safety boundary",
     body: "This app is a reminder and prioritization tool only. It does not judge whether food is safe to eat. Always follow the package label and official food safety guidance.",
     zhBody: "本工具仅用于提醒和排序，不能判断食品是否安全。请始终以包装说明和官方食品安全建议为准。"
   },
-  pro: {
-    title: "Demo Unlock",
-    body: "This is a local demo unlock, not a real payment.",
-    limit: "Free demo allows up to 10 current foods.",
-    success: "Demo unlocked on this device.",
-    invalid: "That demo code did not match."
-  },
   install: {
-    title: "Install Eat First",
+    title: "Install Fresh Squad",
     body: "Use Safari on iPhone, then add this PWA to the home screen.",
     steps: [
       "Open the deployed link in Safari on iPhone.",
       "Tap the Share button.",
       "Choose Add to Home Screen.",
       "Tap Add.",
-      "Launch Eat First from the home screen."
+      "Launch Fresh Squad from the home screen."
     ]
   }
 };
