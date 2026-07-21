@@ -6,6 +6,7 @@ dist
 .vercel
 *.tsbuildinfo
 exec-*.png
+output/playwright/
 vite.config.js
 vite.config.d.ts
 tailwind.config.js

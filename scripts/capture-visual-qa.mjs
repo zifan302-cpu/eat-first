@@ -1,6 +1,5 @@
-import { writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { mkdir, writeFile } from "node:fs/promises";
+import { join, resolve } from "node:path";
 
 const pages = await fetch("http://127.0.0.1:9223/json").then((response) => response.json());
 const page = pages.find((entry) => entry.type === "page" && entry.url.startsWith("http://127.0.0.1:4173"));
@@ -51,13 +50,14 @@ const date = (offset) => {
 };
 const at = new Date().toISOString();
 
-const makeFood = (id, name, category, dateLabelType, labelDate, status = "active", history = []) => ({
+const makeFood = (id, name, category, dateLabelType, labelDate, quantityAmount, quantityUnit = "item", status = "active", history = []) => ({
   id,
   name,
   normalizedName: name.toLowerCase(),
   category,
   dateLabelType,
   ...(labelDate ? { labelDate } : {}),
+  ...(quantityAmount ? { quantityAmount, quantityUnit } : {}),
   status,
   source: "manual",
   createdAt: at,
@@ -66,16 +66,22 @@ const makeFood = (id, name, category, dateLabelType, labelDate, status = "active
 });
 
 const sampleState = {
-  schemaVersion: "1.1.0",
+  schemaVersion: "1.2.0",
   appId: "eat-first",
   preferences: { locale: "zh-CN", topN: 3, showSafetyBanner: true, hasSeenOnboarding: true },
   foods: [
-    makeFood("tomato", "番茄", "vegetable", "use_by", date(0)),
-    makeFood("mushroom", "蘑菇", "vegetable", "use_by", date(1)),
-    makeFood("broccoli", "西兰花", "vegetable", "best_before", date(-1)),
-    makeFood("carrot", "胡萝卜", "vegetable", "best_before", date(3)),
-    makeFood("eggplant", "茄子", "vegetable", "none"),
-    makeFood("saved", "昨天的胡萝卜", "vegetable", "best_before", date(-1), "eaten", [
+    makeFood("tomato", "番茄", "vegetable", "use_by", date(0), 4),
+    makeFood("mushroom", "蘑菇", "vegetable", "use_by", date(1), 250, "g"),
+    makeFood("broccoli", "西兰花", "vegetable", "best_before", date(-1), 1),
+    makeFood("carrot", "胡萝卜", "vegetable", "best_before", date(3), 3),
+    makeFood("eggplant", "茄子", "vegetable", "none", 2),
+    makeFood("yogurt", "希腊酸奶", "dairy_eggs", "use_by", date(4), 500, "g"),
+    makeFood("noodles", "鸡汤方便面", "dry_goods", "best_before", date(35), 4, "pack"),
+    makeFood("soy", "生抽", "condiment", "best_before", date(90), 1, "bottle"),
+    makeFood("berries", "蓝莓", "fruit", "use_by", date(2), 200, "g"),
+    makeFood("milk", "牛奶", "dairy_eggs", "opened", date(-2), 1, "l"),
+    makeFood("bread", "全麦面包", "bakery", "best_before", date(1), 1, "pack"),
+    makeFood("saved", "昨天的胡萝卜", "vegetable", "best_before", date(-1), 1, "item", "eaten", [
       { id: "saved-eaten", type: "eaten", at }
     ])
   ],
@@ -99,7 +105,9 @@ async function capture(name) {
     fromSurface: true,
     captureBeyondViewport: false
   });
-  const output = join(tmpdir(), `eat-first-v05-${name}.png`);
+  const outputDir = resolve("output/playwright");
+  await mkdir(outputDir, { recursive: true });
+  const output = join(outputDir, `eat-first-v06-${name}.png`);
   await writeFile(output, Buffer.from(result.data, "base64"));
   console.log(output);
 }
@@ -122,6 +130,14 @@ for (const [name, hash] of [
   await evaluate(`location.hash = ${JSON.stringify(hash)}`);
   await delay(750);
   await capture(name);
+  if (name === "fridge-430x900") {
+    await evaluate("document.querySelector('section.space-y-2 article button')?.click()");
+    await delay(350);
+    await capture("fridge-actions-430x900");
+    await evaluate("Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.includes('用了一些'))?.click()");
+    await delay(250);
+    await capture("fridge-partial-430x900");
+  }
 }
 
 socket.close();

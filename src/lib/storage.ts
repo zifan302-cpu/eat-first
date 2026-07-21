@@ -1,6 +1,7 @@
 import type { AppStateEnvelope, FoodItem, LocaleCode } from "../types/food";
 import { APP_ID, SCHEMA_VERSION, STORAGE_KEY } from "./constants";
 import { isoNow } from "./dates";
+import { parseQuantityText } from "./quantity";
 
 function detectLocale(): LocaleCode {
   if (typeof navigator !== "undefined" && navigator.language.toLowerCase().startsWith("zh")) {
@@ -17,7 +18,9 @@ export function isImportableState(input: unknown): boolean {
   return (
     isObject(input) &&
     input.appId === APP_ID &&
-    (input.schemaVersion === SCHEMA_VERSION || input.schemaVersion === "1.0.0") &&
+    (input.schemaVersion === SCHEMA_VERSION ||
+      input.schemaVersion === "1.1.0" ||
+      input.schemaVersion === "1.0.0") &&
     Array.isArray(input.foods)
   );
 }
@@ -50,7 +53,19 @@ function normalizeFoods(input: unknown): FoodItem[] {
         ? item.source
         : "import";
 
-    return [{ ...item, source } as FoodItem];
+    const parsedQuantity = parseQuantityText(
+      typeof item.quantityText === "string" ? item.quantityText : undefined
+    );
+    const quantityAmount =
+      typeof item.quantityAmount === "number" && item.quantityAmount > 0
+        ? item.quantityAmount
+        : parsedQuantity.amount;
+    const quantityUnit =
+      typeof item.quantityUnit === "string"
+        ? (item.quantityUnit as FoodItem["quantityUnit"])
+        : parsedQuantity.unit;
+
+    return [{ ...item, source, quantityAmount, quantityUnit } as FoodItem];
   });
 }
 

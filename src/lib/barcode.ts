@@ -12,6 +12,7 @@ export interface BarcodeProduct {
   brand?: string;
   quantityText?: string;
   category: FoodCategory;
+  categoryConfidence: "high" | "low";
 }
 
 function parseGs1Date(value: string): string | undefined {

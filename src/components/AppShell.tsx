@@ -9,7 +9,7 @@ export function AppShell({ children }: PropsWithChildren): JSX.Element {
 
   return (
     <div className="paper-canvas relative min-h-screen text-ink">
-      <main className="relative mx-auto flex min-h-screen w-full max-w-md flex-col px-4 pb-[calc(98px+env(safe-area-inset-bottom))] pt-5">
+      <main className="relative mx-auto flex min-h-screen w-full max-w-md flex-col px-4 pb-[calc(104px+env(safe-area-inset-bottom))] pt-5">
         {children}
       </main>
       <BottomNav t={t} />

@@ -3,7 +3,7 @@ export const enGB = {
     name: "Fresh Squad",
     subtitle: "Know what to handle before food goes to waste.",
     valueLine: "A small team for your biggest fridge decisions.",
-    version: "V0.5 Squad Home"
+    version: "V0.6 Usability"
   },
   nav: {
     home: "Home",
@@ -23,6 +23,9 @@ export const enGB = {
   },
   actions: {
     eat: "Eat",
+    useSome: "Use some",
+    useAll: "Use all",
+    details: "Details",
     freeze: "Freeze",
     check: "Check",
     discard: "Discard",
@@ -49,6 +52,8 @@ export const enGB = {
     openedShelfLifeDays: "Reminder after",
     quantityText: "Amount",
     quantityPlaceholder: "1 pack, half bottle...",
+    quantityAmount: "Quantity",
+    quantityUnit: "Unit",
     note: "Note",
     notePlaceholder: "Optional reminder",
     today: "Today",
@@ -86,6 +91,16 @@ export const enGB = {
     dry_goods: "Dry goods",
     frozen_food: "Frozen food",
     other: "Other"
+  },
+  quantityUnits: {
+    item: "item",
+    portion: "portion",
+    pack: "pack",
+    bottle: "bottle",
+    g: "g",
+    kg: "kg",
+    ml: "ml",
+    l: "l"
   },
   status: {
     active: "Current",
@@ -163,6 +178,8 @@ export const enGB = {
     missionInProgress: "They are waiting for today’s plan.",
     quiet: "The fridge is quiet. Everyone is home.",
     residents: "residents",
+    emptyScene: "Add a food and its representative will settle in here.",
+    moreMembers: "more foods",
     level: "squad level",
     viewProgress: "View the squad record",
     homeNoteTitle: "A home that grows with real care",
@@ -205,6 +222,8 @@ export const enGB = {
     error: "The code could not be scanned or looked up. Check camera permission or enter the number manually.",
     useDraft: "Use this editable draft",
     boundary: "Barcode data can be incomplete. Always confirm the product name and package date yourself."
+    ,categoryReview: "Category needs a quick check",
+    dateReview: "Package dates are rarely stored in ordinary retail barcodes. Add the printed date before saving."
   },
   recipe: {
     eyebrow: "AI meal ideas",
@@ -239,6 +258,7 @@ export const enGB = {
   },
   undo: {
     added: "added",
+    partial: "amount updated",
     eaten: "marked eaten",
     frozen: "marked frozen",
     discarded: "marked discarded",
@@ -248,6 +268,7 @@ export const enGB = {
   historyActions: {
     created: "Added",
     updated: "Updated",
+    partially_used: "Used some",
     eaten: "Eaten",
     frozen: "Frozen",
     discarded: "Discarded",
@@ -257,7 +278,15 @@ export const enGB = {
   fridge: {
     editTitle: "Edit food",
     activeOnly: "Current foods",
-    deleteConfirm: "Delete this food item?"
+    deleteConfirm: "Delete this food item?",
+    searchPlaceholder: "Search your fridge",
+    useSomeTitle: "How much is left?",
+    useSomeBody: "Keep this food active and update what remains.",
+    remainingAmount: "Remaining quantity",
+    remainingText: "What remains",
+    remainingPlaceholder: "Half a bottle, one portion...",
+    savePartial: "Save remaining amount",
+    otherItems: "more foods"
   },
   stats: {
     eaten: "Eaten",

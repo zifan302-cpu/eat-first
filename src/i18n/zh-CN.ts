@@ -5,7 +5,7 @@ export const zhCN: Messages = {
     name: "冰箱小鲜队",
     subtitle: "在食物浪费前，先知道今天该处理什么。",
     valueLine: "一支帮你处理冰箱大事的小队。",
-    version: "V0.5 小鲜队住处"
+    version: "V0.6 使用体验版"
   },
   nav: {
     home: "首页",
@@ -25,6 +25,9 @@ export const zhCN: Messages = {
   },
   actions: {
     eat: "吃掉",
+    useSome: "用了一些",
+    useAll: "全部用完",
+    details: "详情",
     freeze: "冷冻",
     check: "检查",
     discard: "丢弃",
@@ -51,6 +54,8 @@ export const zhCN: Messages = {
     openedShelfLifeDays: "几天后提醒",
     quantityText: "分量",
     quantityPlaceholder: "1 包、半瓶...",
+    quantityAmount: "数量",
+    quantityUnit: "单位",
     note: "备注",
     notePlaceholder: "可选提醒",
     today: "今天",
@@ -88,6 +93,16 @@ export const zhCN: Messages = {
     dry_goods: "干货",
     frozen_food: "冷冻食品",
     other: "其他"
+  },
+  quantityUnits: {
+    item: "个",
+    portion: "份",
+    pack: "包",
+    bottle: "瓶",
+    g: "克",
+    kg: "千克",
+    ml: "毫升",
+    l: "升"
   },
   status: {
     active: "当前",
@@ -165,6 +180,8 @@ export const zhCN: Messages = {
     missionInProgress: "大家在等今天的计划。",
     quiet: "冰箱很安静，大家都在家。",
     residents: "常住成员",
+    emptyScene: "添加食材后，它的代表会住进这里。",
+    moreMembers: "种其他食材",
     level: "小队等级",
     viewProgress: "查看小队成长记录",
     homeNoteTitle: "住处会跟着真实照料慢慢成长",
@@ -207,6 +224,8 @@ export const zhCN: Messages = {
     error: "无法扫描或查询这个编码。请检查摄像头权限，或改为手动输入。",
     useDraft: "使用这份可编辑草稿",
     boundary: "条形码数据可能不完整，请亲自确认商品名称和包装日期。"
+    ,categoryReview: "分类需要快速确认",
+    dateReview: "普通零售条形码很少包含包装日期，请保存前补充包装上印刷的日期。"
   },
   recipe: {
     eyebrow: "AI 菜谱灵感",
@@ -241,6 +260,7 @@ export const zhCN: Messages = {
   },
   undo: {
     added: "已添加",
+    partial: "已更新剩余量",
     eaten: "已标记吃掉",
     frozen: "已标记冷冻",
     discarded: "已标记丢弃",
@@ -250,6 +270,7 @@ export const zhCN: Messages = {
   historyActions: {
     created: "添加",
     updated: "更新",
+    partially_used: "使用了一部分",
     eaten: "吃掉",
     frozen: "冷冻",
     discarded: "丢弃",
@@ -259,7 +280,15 @@ export const zhCN: Messages = {
   fridge: {
     editTitle: "编辑食物",
     activeOnly: "当前食物",
-    deleteConfirm: "确定删除这个食物吗？"
+    deleteConfirm: "确定删除这个食物吗？",
+    searchPlaceholder: "搜索冰箱食材",
+    useSomeTitle: "现在还剩多少？",
+    useSomeBody: "食材会继续留在冰箱中，只更新剩余分量。",
+    remainingAmount: "剩余数量",
+    remainingText: "剩余说明",
+    remainingPlaceholder: "半瓶、一份左右……",
+    savePartial: "保存剩余分量",
+    otherItems: "种其他食材"
   },
   stats: {
     eaten: "已吃掉",

@@ -57,12 +57,14 @@ export function BarcodeScannerDialog({
         const product = await lookupBarcodeProduct(parsed.gtin, locale, controller.signal);
         const nextDraft: Partial<AddFoodInput> = {
           name: product?.name ?? "",
-          category: product?.category ?? "other",
+          category: product?.categoryConfidence === "high" ? product.category : "other",
           quantityText: product?.quantityText,
           barcode: parsed.gtin,
           source: "barcode",
           dateLabelType: parsed.dateLabelType ?? "none",
-          labelDate: parsed.labelDate
+          labelDate: parsed.labelDate,
+          categoryNeedsReview: product?.categoryConfidence !== "high",
+          dateNeedsReview: !parsed.labelDate
         };
         setDraft(nextDraft);
         setStatus(product ? "ready" : "not_found");
@@ -215,6 +217,12 @@ export function BarcodeScannerDialog({
             <p className="text-xs font-black uppercase tracking-wider text-leaf-700">{t.barcode.found}</p>
             <p className="mt-1 font-editorial text-lg font-black text-ink">{draft.name}</p>
             {draft.quantityText ? <p className="mt-1 text-sm text-ink-muted">{draft.quantityText}</p> : null}
+            {draft.categoryNeedsReview ? (
+              <p className="mt-2 text-xs font-bold text-[#70431C]">{t.barcode.categoryReview}</p>
+            ) : null}
+            {draft.dateNeedsReview ? (
+              <p className="mt-1 text-xs font-semibold leading-5 text-ink-muted">{t.barcode.dateReview}</p>
+            ) : null}
           </div>
         ) : null}
 

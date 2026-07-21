@@ -20,7 +20,13 @@ export function SquadPage(): JSX.Element {
     <div className="space-y-6">
       <PageHeader eyebrow={t.squad.eyebrow} title={t.pages.squadTitle} body={t.squad.intro} />
 
-      <SquadHomeScene label={t.squad.sceneLabel} />
+      <SquadHomeScene
+        foods={state.foods}
+        label={t.squad.sceneLabel}
+        locale={state.preferences.locale}
+        emptyLabel={t.squad.emptyScene}
+        moreLabel={t.squad.moreMembers}
+      />
 
       <section className="fresh-card p-5">
         <div className="flex items-start justify-between gap-4">
@@ -46,7 +52,7 @@ export function SquadPage(): JSX.Element {
         <div className="mt-5 grid grid-cols-3 divide-x divide-paper-line border-y border-paper-line py-4 text-center">
           <div>
             <UsersRound className="mx-auto h-4 w-4 text-leaf-700" aria-hidden />
-            <p className="mt-1.5 font-editorial text-2xl font-black text-ink">5</p>
+            <p className="mt-1.5 font-editorial text-2xl font-black text-ink">{game.activeCount}</p>
             <p className="text-[0.65rem] font-bold text-ink-muted">{t.squad.residents}</p>
           </div>
           <div>

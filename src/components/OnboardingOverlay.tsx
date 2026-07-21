@@ -12,7 +12,14 @@ export function OnboardingOverlay(): JSX.Element | null {
   return (
     <div className="paper-canvas fixed inset-0 z-50 overflow-y-auto">
       <div className="mx-auto flex min-h-full w-full max-w-md flex-col px-5 pb-8 pt-5">
-        <SquadHomeScene compact label={t.squad.sceneLabel} />
+        <SquadHomeScene
+          compact
+          foods={state.foods}
+          label={t.squad.sceneLabel}
+          locale={state.preferences.locale}
+          emptyLabel={t.squad.emptyScene}
+          moreLabel={t.squad.moreMembers}
+        />
 
         <div className="flex flex-1 flex-col pt-6">
           <p className="fresh-eyebrow">{t.onboarding.eyebrow}</p>

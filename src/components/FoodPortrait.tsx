@@ -1,9 +1,12 @@
 import type { FoodItem } from "../types/food";
 import { characterForFood } from "../lib/characters";
 import { cx } from "../lib/ui";
+import { CategoryIcon } from "./CategoryIcon";
+import { getFreshnessStage } from "../lib/freshness";
+import type { FreshnessStage } from "../lib/freshness";
 
 interface FoodPortraitProps {
-  food: Pick<FoodItem, "name" | "normalizedName">;
+  food: FoodItem;
   size?: "sm" | "md" | "lg";
   rank?: number;
   className?: string;
@@ -15,6 +18,13 @@ const sizes = {
   lg: "h-24 w-24 rounded-[1.5rem]"
 };
 
+const tomatoStateAssets: Record<FreshnessStage, string> = {
+  fresh: "/art/tomato-states/tomato-fresh.png",
+  watch: "/art/tomato-states/tomato-watch.png",
+  urgent: "/art/tomato-states/tomato-urgent.png",
+  check: "/art/tomato-states/tomato-check.png"
+};
+
 export function FoodPortrait({
   food,
   size = "md",
@@ -22,7 +32,8 @@ export function FoodPortrait({
   className
 }: FoodPortraitProps): JSX.Element {
   const character = characterForFood(food);
-  const initial = food.name.trim().slice(0, 1).toLocaleUpperCase();
+  const stage = getFreshnessStage(food);
+  const asset = character?.id === "tomato" ? tomatoStateAssets[stage] : character?.asset;
 
   return (
     <div
@@ -37,15 +48,28 @@ export function FoodPortrait({
           {rank}
         </span>
       ) : null}
-      {character ? (
+      {asset ? (
         <img
-          src={character.asset}
+          src={asset}
           alt=""
-          className="h-[108%] w-[108%] object-contain object-bottom"
+          className={cx(
+            "h-[108%] w-[108%] object-contain object-bottom",
+            character?.id === "tomato" && "h-full w-full object-cover"
+          )}
         />
       ) : (
-        <span className="font-editorial text-2xl font-black text-leaf-700">{initial}</span>
+        <CategoryIcon category={food.category} className="h-full w-full rounded-none border-0" />
       )}
+      <span
+        aria-hidden
+        className={cx(
+          "absolute bottom-1.5 right-1.5 h-2.5 w-2.5 rounded-full border-2 border-paper-soft",
+          stage === "fresh" && "bg-leaf-500",
+          stage === "watch" && "bg-[#D4A53C]",
+          stage === "urgent" && "bg-carrot",
+          stage === "check" && "bg-tomato"
+        )}
+      />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createFoodFromInput, markFoodEaten, snoozeFoodUntilTomorrow } from "../hooks/useFoodActions";
+import { createFoodFromInput, markFoodEaten, snoozeFoodUntilTomorrow, useFoodPart } from "../hooks/useFoodActions";
 import { getActiveFoods, getPriority, getTopFoods } from "../lib/priority";
 import { toDateInputValue, addCalendarDays } from "../lib/dates";
 
@@ -55,5 +55,25 @@ describe("priority rules", () => {
 
     expect(eaten.status).toBe("eaten");
     expect(getActiveFoods([eaten])).toHaveLength(0);
+  });
+
+  it("keeps a partially used item active and updates the remaining amount", () => {
+    const item = createFoodFromInput(
+      {
+        name: "Tomatoes",
+        category: "vegetable",
+        dateLabelType: "best_before",
+        labelDate: toDateInputValue(addCalendarDays(today, 2)),
+        quantityAmount: 4,
+        quantityUnit: "item"
+      },
+      today
+    );
+
+    const [updated] = useFoodPart([item], item.id, 2, undefined, today);
+
+    expect(updated.status).toBe("active");
+    expect(updated.quantityAmount).toBe(2);
+    expect(updated.actionHistory.at(-1)?.type).toBe("partially_used");
   });
 });

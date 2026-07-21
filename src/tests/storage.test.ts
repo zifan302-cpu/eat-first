@@ -52,8 +52,35 @@ describe("storage", () => {
 
     const migrated = migrateState(oldState);
 
-    expect(migrated.schemaVersion).toBe("1.1.0");
+    expect(migrated.schemaVersion).toBe("1.2.0");
     expect(migrated.foods).toHaveLength(1);
     expect(migrated.foods[0].source).toBe("import");
+  });
+
+  it("derives structured quantity from an older text amount", () => {
+    const migrated = migrateState({
+      appId: "eat-first",
+      schemaVersion: "1.1.0",
+      preferences: { locale: "en-GB" },
+      foods: [
+        {
+          id: "legacy-quantity",
+          name: "Yogurt",
+          normalizedName: "yogurt",
+          category: "dairy_eggs",
+          dateLabelType: "none",
+          quantityText: "500 g",
+          status: "active",
+          source: "barcode",
+          createdAt: "2026-06-10T12:00:00.000Z",
+          updatedAt: "2026-06-10T12:00:00.000Z",
+          actionHistory: []
+        }
+      ],
+      meta: {}
+    });
+
+    expect(migrated.foods[0].quantityAmount).toBe(500);
+    expect(migrated.foods[0].quantityUnit).toBe("g");
   });
 });

@@ -17,7 +17,7 @@ interface BottomNavProps {
 
 export function BottomNav({ t }: BottomNavProps): JSX.Element {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md border-t border-paper-line bg-paper-soft/96 px-3 pt-2 pb-[max(env(safe-area-inset-bottom),0.55rem)] shadow-[0_-5px_0_rgba(32,61,46,0.035)]">
+    <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md border-t border-ink/15 bg-[#F7EEDC] px-3 pt-2 pb-[max(env(safe-area-inset-bottom),0.55rem)] shadow-[0_-10px_24px_rgba(32,61,46,0.12)]">
       <div className="grid grid-cols-5 gap-0.5">
         {links.map(({ to, labelKey, icon: Icon }) => (
           <NavLink

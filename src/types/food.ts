@@ -4,6 +4,16 @@ export type DateLabelType = "use_by" | "best_before" | "opened" | "none";
 
 export type FoodStatus = "active" | "eaten" | "frozen" | "discarded";
 
+export type FoodQuantityUnit =
+  | "item"
+  | "portion"
+  | "pack"
+  | "bottle"
+  | "g"
+  | "kg"
+  | "ml"
+  | "l";
+
 export type FoodCategory =
   | "meat"
   | "fish"
@@ -25,6 +35,7 @@ export type FoodSource = "manual" | "barcode" | "batch_add" | "import";
 export type FoodActionType =
   | "created"
   | "updated"
+  | "partially_used"
   | "eaten"
   | "frozen"
   | "discarded"
@@ -46,6 +57,8 @@ export interface FoodItem {
   dateLabelType: DateLabelType;
   labelDate?: string;
   openedShelfLifeDays?: number;
+  quantityAmount?: number;
+  quantityUnit?: FoodQuantityUnit;
   quantityText?: string;
   barcode?: string;
   note?: string;
@@ -73,7 +86,7 @@ export interface AppMeta {
 }
 
 export interface AppStateEnvelope {
-  schemaVersion: "1.1.0";
+  schemaVersion: "1.2.0";
   appId: "eat-first";
   preferences: UserPreferences;
   foods: FoodItem[];

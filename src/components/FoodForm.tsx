@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { DateLabelType, FoodCategory, LocaleCode } from "../types/food";
+import type { DateLabelType, FoodCategory, FoodQuantityUnit, LocaleCode } from "../types/food";
 import type { Messages } from "../i18n/en-GB";
 import type { AddFoodInput } from "../hooks/useFoodActions";
 import { nextDayInputValue, todayInputValue } from "../lib/dates";
@@ -8,6 +8,8 @@ import { CategorySelect } from "./CategorySelect";
 import { DateLabelSegment } from "./DateLabelSegment";
 import { QuickDateChips } from "./QuickDateChips";
 import { cx } from "../lib/ui";
+import { FOOD_QUANTITY_UNITS } from "../lib/constants";
+import { parseQuantityText } from "../lib/quantity";
 
 export interface RecentFoodSuggestion {
   normalizedName: string;
@@ -41,6 +43,7 @@ export function FoodForm({
   onSubmit,
   onCancel
 }: FoodFormProps): JSX.Element {
+  const parsedInitialQuantity = parseQuantityText(initial?.quantityText);
   const [name, setName] = useState(initial?.name ?? "");
   const [category, setCategory] = useState<FoodCategory>(initial?.category ?? "other");
   const [categoryTouched, setCategoryTouched] = useState(Boolean(initial?.category));
@@ -51,7 +54,15 @@ export function FoodForm({
   const [openedShelfLifeDays, setOpenedShelfLifeDays] = useState(
     initial?.openedShelfLifeDays ?? 2
   );
-  const [quantityText, setQuantityText] = useState(initial?.quantityText ?? "");
+  const [quantityAmount, setQuantityAmount] = useState(
+    initial?.quantityAmount?.toString() ?? parsedInitialQuantity.amount?.toString() ?? ""
+  );
+  const [quantityUnit, setQuantityUnit] = useState<FoodQuantityUnit>(
+    initial?.quantityUnit ?? parsedInitialQuantity.unit ?? "item"
+  );
+  const [quantityText, setQuantityText] = useState(
+    parsedInitialQuantity.amount ? "" : initial?.quantityText ?? ""
+  );
   const [note, setNote] = useState(initial?.note ?? "");
   const [error, setError] = useState<string | null>(null);
 
@@ -82,6 +93,8 @@ export function FoodForm({
       dateLabelType,
       labelDate: dateLabelType === "none" ? undefined : labelDate,
       openedShelfLifeDays: dateLabelType === "opened" ? openedShelfLifeDays : undefined,
+      quantityAmount: quantityAmount ? Number(quantityAmount) : undefined,
+      quantityUnit: quantityAmount ? quantityUnit : undefined,
       quantityText,
       barcode: initial?.barcode,
       note,
@@ -99,6 +112,7 @@ export function FoodForm({
     if (intent === "continue" && result !== false) {
       setName("");
       setQuantityText("");
+      setQuantityAmount("");
       setNote("");
       setLabelDate(dateLabelType === "none" ? "" : nextDayInputValue());
       setCategoryTouched(false);
@@ -225,12 +239,36 @@ export function FoodForm({
 
       <label className="block">
         <span className="mb-2 block text-sm font-black text-ink">{t.form.quantityText}</span>
-        <input
-          value={quantityText}
-          onChange={(event) => setQuantityText(event.target.value)}
-          placeholder={t.form.quantityPlaceholder}
-          className="fresh-field"
-        />
+        <div className="grid grid-cols-[1fr_1.15fr] gap-2">
+          <input
+            type="number"
+            inputMode="decimal"
+            min="0"
+            step="any"
+            value={quantityAmount}
+            onChange={(event) => setQuantityAmount(event.target.value)}
+            placeholder={t.form.quantityAmount}
+            className="fresh-field"
+          />
+          <select
+            value={quantityUnit}
+            onChange={(event) => setQuantityUnit(event.target.value as FoodQuantityUnit)}
+            className="fresh-field"
+            aria-label={t.form.quantityUnit}
+          >
+            {FOOD_QUANTITY_UNITS.map((unit) => (
+              <option key={unit} value={unit}>{t.quantityUnits[unit]}</option>
+            ))}
+          </select>
+        </div>
+        {!quantityAmount ? (
+          <input
+            value={quantityText}
+            onChange={(event) => setQuantityText(event.target.value)}
+            placeholder={t.form.quantityPlaceholder}
+            className="fresh-field mt-2"
+          />
+        ) : null}
       </label>
 
       <label className="block">

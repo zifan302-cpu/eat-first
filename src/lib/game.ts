@@ -38,8 +38,8 @@ function withinDays(value: string, today: Date, days: number): boolean {
 
 export function getGameProgress(foods: FoodItem[], today = new Date()): GameProgress {
   const actions = allActions(foods);
-  const handledTypes = new Set(["eaten", "frozen", "discarded"]);
-  const rescuedTypes = new Set(["eaten", "frozen"]);
+  const handledTypes = new Set(["partially_used", "eaten", "frozen", "discarded"]);
+  const rescuedTypes = new Set(["partially_used", "eaten", "frozen"]);
   const handledToday = actions.filter(
     (action) => handledTypes.has(action.type) && isOnDay(action.at, today)
   ).length;

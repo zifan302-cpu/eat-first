@@ -1,5 +1,5 @@
 import type { DateLabelType, FoodCategory, LocaleCode } from "../types/food";
-import { CATEGORY_ICONS, DATE_LABEL_TYPES, FOOD_CATEGORIES } from "../lib/constants";
+import { DATE_LABEL_TYPES, FOOD_CATEGORIES } from "../lib/constants";
 import { enGB, type Messages } from "./en-GB";
 import { zhCN } from "./zh-CN";
 
@@ -25,6 +25,6 @@ export function categoryOptions(locale: LocaleCode): Array<{ value: FoodCategory
   const t = getMessages(locale);
   return FOOD_CATEGORIES.map((value) => ({
     value,
-    label: `${CATEGORY_ICONS[value]} ${t.categories[value]}`
+    label: t.categories[value]
   }));
 }

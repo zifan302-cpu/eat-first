@@ -6,7 +6,8 @@ import type {
   FoodCategory,
   FoodItem,
   DateLabelType,
-  FoodSource
+  FoodSource,
+  FoodQuantityUnit
 } from "../types/food";
 import { createFoodItem } from "../lib/foods";
 import { isoNow, toDateInputValue } from "../lib/dates";
@@ -19,10 +20,14 @@ export interface AddFoodInput {
   dateLabelType: DateLabelType;
   labelDate?: string;
   openedShelfLifeDays?: number;
+  quantityAmount?: number;
+  quantityUnit?: FoodQuantityUnit;
   quantityText?: string;
   barcode?: string;
   note?: string;
   source?: FoodSource;
+  categoryNeedsReview?: boolean;
+  dateNeedsReview?: boolean;
 }
 
 export interface UpdateFoodInput extends Partial<AddFoodInput> {}
@@ -34,6 +39,7 @@ export interface UseFoodActions {
   markEaten(id: string): void;
   markFrozen(id: string): void;
   markDiscarded(id: string): void;
+  usePart(id: string, remainingAmount?: number, remainingText?: string): void;
   snoozeUntilTomorrow(id: string): void;
 }
 
@@ -64,6 +70,11 @@ export function createFoodFromInput(input: AddFoodInput, now = new Date()): Food
         input.dateLabelType === "opened"
           ? input.openedShelfLifeDays ?? (input.category === "leftovers" ? 2 : 3)
           : undefined,
+      quantityAmount:
+        typeof input.quantityAmount === "number" && input.quantityAmount > 0
+          ? input.quantityAmount
+          : undefined,
+      quantityUnit: input.quantityUnit,
       quantityText: input.quantityText?.trim() || undefined,
       barcode: input.barcode?.trim() || undefined,
       note: input.note?.trim() || undefined
@@ -92,6 +103,13 @@ export function updateFoodList(foods: FoodItem[], id: string, patch: UpdateFoodI
         nextDateLabelType === "opened"
           ? patch.openedShelfLifeDays ?? food.openedShelfLifeDays ?? 3
           : undefined,
+      quantityAmount:
+        typeof patch.quantityAmount === "number"
+          ? patch.quantityAmount > 0
+            ? patch.quantityAmount
+            : undefined
+          : food.quantityAmount,
+      quantityUnit: patch.quantityUnit ?? food.quantityUnit,
       quantityText: patch.quantityText?.trim() || food.quantityText,
       note: patch.note?.trim() || food.note,
       updatedAt: isoNow(now),
@@ -136,6 +154,45 @@ export function markFoodFrozen(foods: FoodItem[], id: string, now = new Date()):
 
 export function markFoodDiscarded(foods: FoodItem[], id: string, now = new Date()): FoodItem[] {
   return markFoodStatus(foods, id, "discarded", now);
+}
+
+export function useFoodPart(
+  foods: FoodItem[],
+  id: string,
+  remainingAmount?: number,
+  remainingText?: string,
+  now = new Date()
+): FoodItem[] {
+  if (typeof remainingAmount === "number" && remainingAmount <= 0) {
+    return markFoodStatus(foods, id, "eaten", now);
+  }
+
+  return foods.map((food) => {
+    if (food.id !== id) return food;
+    const at = isoNow(now);
+    const nextText = remainingText?.trim();
+    return {
+      ...food,
+      quantityAmount:
+        typeof remainingAmount === "number" && remainingAmount > 0
+          ? remainingAmount
+          : food.quantityAmount,
+      quantityText: nextText || food.quantityText,
+      updatedAt: at,
+      actionHistory: [
+        ...food.actionHistory,
+        action(
+          "partially_used",
+          now,
+          typeof remainingAmount === "number"
+            ? `remaining:${remainingAmount}:${food.quantityUnit ?? "item"}`
+            : nextText
+              ? `remaining:${nextText}`
+              : undefined
+        )
+      ]
+    };
+  });
 }
 
 export function snoozeFoodUntilTomorrow(foods: FoodItem[], id: string, now = new Date()): FoodItem[] {
@@ -212,6 +269,15 @@ export function useFoodActions(): UseFoodActions {
             foods: markFoodDiscarded(current.foods, id)
           }),
           { action: "discarded", name: stateFoodName(id) }
+        );
+      },
+      usePart(id, remainingAmount, remainingText) {
+        commitState(
+          (current) => ({
+            ...current,
+            foods: useFoodPart(current.foods, id, remainingAmount, remainingText)
+          }),
+          { action: "partial", name: stateFoodName(id) }
         );
       },
       snoozeUntilTomorrow(id) {
