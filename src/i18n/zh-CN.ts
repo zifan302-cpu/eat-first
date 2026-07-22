@@ -5,7 +5,7 @@ export const zhCN: Messages = {
     name: "冰箱小鲜队",
     subtitle: "在食物浪费前，先知道今天该处理什么。",
     valueLine: "一支帮你处理冰箱大事的小队。",
-    version: "V0.8 灵活菜谱决策版"
+    version: "V0.9 菜谱决策版"
   },
   nav: {
     home: "首页",
@@ -293,9 +293,47 @@ export const zhCN: Messages = {
     timeout: "菜谱生成等待过久，本次选择已经保留，可以直接重试。",
     rateLimited: "短时间内生成次数较多，请稍等片刻再试。",
     invalidResponse: "千问返回的菜谱不完整，请重新生成。",
+    cancelled: "已取消生成，本次选择仍然保留。",
+    compareEyebrow: "先看取舍，再看步骤",
+    compareTitle: "两个可以真正动手的方案",
+    historyResultTitle: "之前保存的一组方案",
+    historyBadge: "历史",
     option: "方案",
+    differenceTags: {
+      fastest: "最快完成",
+      uses_more: "多处理食材",
+      one_pan: "少洗锅",
+      lunchbox: "适合便当",
+      batch_friendly: "适合多做一份",
+      no_cook: "无需开火"
+    },
+    fridgeFoodsUsed: "会用到的冰箱食材",
+    unknownHistoryFood: "之前的冰箱食材",
+    equipmentNeeded: "需要厨具",
+    basicEquipmentOnly: "只需基础工具",
+    missingIngredients: "可能需要补充",
+    nothingExtra: "没有额外列出",
+    viewFullRecipe: "查看食材与完整做法",
     ingredients: "所需食材",
     steps: "做法",
+    adjustThisOption: "只调整这个方案",
+    adjustments: {
+      shorter: "再快一点",
+      one_pan: "改成一锅完成",
+      lunchbox: "改成便当",
+      different_method: "换一种主要做法",
+      remove_ingredient: "不用某项食材",
+      missing_pantry: "替换没有的调料"
+    },
+    removeIngredientPlaceholder: "写下不想用的食材",
+    missingPantryPlaceholder: "写下家里没有的调料",
+    replaceOption: "替换",
+    refiningOption: "正在替换这个方案…",
+    estimateOnly: "用量只是建议，实际使用后再由你确认。",
+    historyTitle: "最近生成的菜谱",
+    historyCount: "本地保存 {count} 组",
+    historySeparator: " / ",
+    clearHistory: "清除菜谱历史",
     boundary: "菜谱建议不能判断食品安全，Use by 标签与官方建议始终优先。"
   },
   quickAdd: {
@@ -393,9 +431,14 @@ export const zhCN: Messages = {
     removeCustom: "删除 {name}",
     pantryPolicy: "常备调料策略",
     pantryPolicies: {
-      strict: "只使用已标记的常备项",
-      everyday: "可以建议少量日常调料",
-      flexible: "允许额外建议并给出替代"
+      strict: "只用我已经有的调料",
+      everyday: "缺一两样常见调料也可以推荐",
+      flexible: "可以推荐额外调料，但请给替代品"
+    },
+    pantryPolicyDescriptions: {
+      strict: "菜谱不会加入你没有在下方勾选的调料。",
+      everyday: "可以加入一两种常见基础调料，并会明确列出需要准备什么。",
+      flexible: "可以建议更丰富的普通调料，但同时给出容易找到的替代品。"
     },
     pantryStaples: "我通常拥有的常备项",
     customPantry: "其他常备调料",

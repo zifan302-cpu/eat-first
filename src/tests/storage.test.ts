@@ -52,7 +52,7 @@ describe("storage", () => {
 
     const migrated = migrateState(oldState);
 
-    expect(migrated.schemaVersion).toBe("1.4.0");
+    expect(migrated.schemaVersion).toBe("1.5.0");
     expect(migrated.foods).toHaveLength(1);
     expect(migrated.foods[0].source).toBe("import");
     expect(migrated.preferences.recipe.cuisine).toBe("auto");
@@ -62,12 +62,13 @@ describe("storage", () => {
     expect(migrated.preferences.recipe.pantryStaples.salt).toBe(true);
     expect(migrated.preferences.recipe.customEquipment).toEqual([]);
     expect(migrated.preferences.recipe.customPantryStaples).toEqual([]);
+    expect(migrated.recipeHistory).toEqual([]);
   });
 
   it("normalizes and bounds custom kitchen labels", () => {
     const migrated = migrateState({
       appId: "eat-first",
-      schemaVersion: "1.4.0",
+      schemaVersion: "1.5.0",
       preferences: {
         recipe: {
           customEquipment: ["  Tagine  ", "tagine", "A".repeat(40), ...Array.from({ length: 10 }, (_, index) => `Tool ${index}`)],
@@ -134,5 +135,59 @@ describe("storage", () => {
 
     expect(migrated.foods[0].quantityAmount).toBe(500);
     expect(migrated.foods[0].quantityUnit).toBe("g");
+  });
+
+  it("keeps only bounded valid local recipe history", () => {
+    const migrated = migrateState({
+      appId: "eat-first",
+      schemaVersion: "1.5.0",
+      preferences: {},
+      foods: [],
+      recipeHistory: [{
+        id: "history-1",
+        createdAt: "2026-07-22T12:00:00.000Z",
+        locale: "zh-CN",
+        cuisine: "chinese_home",
+        servings: 2,
+        maxMinutes: 30,
+        cookingGoal: "one_pan",
+        recipes: [{
+          title: "番茄焖饭",
+          summary: "一锅完成",
+          whyThisOption: "少洗锅",
+          totalMinutes: 25,
+          differenceTags: ["one_pan", "invented"],
+          ingredients: ["番茄 2 个", "米饭 2 碗"],
+          steps: ["切番茄", "焖熟"],
+          equipment: ["rice_cooker"],
+          missingIngredients: [],
+          usesFoods: [{ foodId: "tomato", estimatedAmount: 2, estimatedUnit: "item" }]
+        }]
+      }]
+    });
+
+    expect(migrated.recipeHistory).toHaveLength(1);
+    expect(migrated.recipeHistory[0].recipes[0].differenceTags).toEqual(["one_pan"]);
+    expect(migrated.recipeHistory[0].recipes[0].usesFoods[0]).toEqual({
+      foodId: "tomato",
+      estimatedAmount: 2,
+      estimatedUnit: "item"
+    });
+  });
+
+  it("drops recipe history entries with invalid dates", () => {
+    const migrated = migrateState({
+      appId: "eat-first",
+      schemaVersion: "1.5.0",
+      preferences: {},
+      foods: [],
+      recipeHistory: [{
+        id: "broken-history",
+        createdAt: "not-a-date",
+        recipes: [{ title: "Broken", steps: ["Cook"] }]
+      }]
+    });
+
+    expect(migrated.recipeHistory).toEqual([]);
   });
 });

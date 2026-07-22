@@ -276,6 +276,9 @@ export function SettingsPage(): JSX.Element {
                 <option value="everyday">{t.settings.pantryPolicies.everyday}</option>
                 <option value="flexible">{t.settings.pantryPolicies.flexible}</option>
               </select>
+              <span className="mt-2 block text-xs font-medium leading-5 text-ink-muted">
+                {t.settings.pantryPolicyDescriptions[state.preferences.recipe.pantryPolicy]}
+              </span>
             </label>
 
             <details>

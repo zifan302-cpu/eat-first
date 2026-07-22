@@ -4,19 +4,15 @@ import type {
   LocaleCode,
   PantryPolicy,
   PantryStaple,
+  RecipeAdjustmentKind,
   RecipeCookingGoal,
-  RecipeCuisinePreference
+  RecipeCuisinePreference,
+  RecipeHistoryEntry,
+  RecipeIdea
 } from "../types/food";
 import { getPriority } from "./priority";
 
-export interface RecipeIdea {
-  title: string;
-  summary: string;
-  totalMinutes: number;
-  ingredients: string[];
-  steps: string[];
-  usesFoodIds: string[];
-}
+export type { RecipeIdea } from "../types/food";
 
 export interface RecipeFoodInput {
   id: string;
@@ -64,6 +60,31 @@ interface RecipeFoodRoles {
   requiredFoods: FoodItem[];
   availableFoods: FoodItem[];
   excludedFoodIds: string[];
+}
+
+export interface RecipeAdjustment {
+  kind: RecipeAdjustmentKind;
+  detail?: string;
+}
+
+const recipeCache = new Map<string, { expiresAt: number; recipes: RecipeIdea[] }>();
+const RECIPE_CACHE_TTL_MS = 5 * 60_000;
+const RECIPE_CACHE_LIMIT = 20;
+
+export function createRecipeCacheKey(request: RecipeRequest): string {
+  return JSON.stringify(request);
+}
+
+export function clearRecipeCache(): void {
+  recipeCache.clear();
+}
+
+function rememberRecipeResult(key: string, recipes: RecipeIdea[]): void {
+  if (recipeCache.size >= RECIPE_CACHE_LIMIT) {
+    const oldestKey = recipeCache.keys().next().value as string | undefined;
+    if (oldestKey) recipeCache.delete(oldestKey);
+  }
+  recipeCache.set(key, { expiresAt: Date.now() + RECIPE_CACHE_TTL_MS, recipes });
 }
 
 export function isRecipeEligible(food: FoodItem): boolean {
@@ -123,8 +144,15 @@ export function buildRecipeRequest(
 
 export async function generateRecipeIdeas(
   request: RecipeRequest,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  bypassCache = false
 ): Promise<RecipeIdea[]> {
+  const cacheKey = createRecipeCacheKey(request);
+  const cached = recipeCache.get(cacheKey);
+  if (!bypassCache && cached && cached.expiresAt > Date.now()) {
+    return cached.recipes;
+  }
+  if (cached) recipeCache.delete(cacheKey);
   const response = await fetch("/api/recipes", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -136,5 +164,55 @@ export async function generateRecipeIdeas(
     recipes?: RecipeIdea[];
   };
   if (!response.ok) throw new Error(data.code ?? "RECIPE_REQUEST_FAILED");
-  return data.recipes ?? [];
+  const recipes = data.recipes ?? [];
+  rememberRecipeResult(cacheKey, recipes);
+  return recipes;
+}
+
+export async function generateRecipeReplacement(
+  request: RecipeRequest,
+  recipe: RecipeIdea,
+  adjustment: RecipeAdjustment,
+  otherRecipes: RecipeIdea[] = [],
+  signal?: AbortSignal
+): Promise<RecipeIdea> {
+  const response = await fetch("/api/recipes/refine", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      request,
+      recipe,
+      otherRecipes: otherRecipes.slice(0, 1),
+      adjustment: {
+        kind: adjustment.kind,
+        detail: adjustment.detail?.trim().slice(0, 80) || undefined
+      }
+    }),
+    signal
+  });
+  const data = (await response.json().catch(() => ({}))) as {
+    code?: string;
+    recipe?: RecipeIdea;
+  };
+  if (!response.ok || !data.recipe) throw new Error(data.code ?? "RECIPE_REQUEST_FAILED");
+  return data.recipe;
+}
+
+export function createRecipeHistoryEntry(
+  request: RecipeRequest,
+  recipes: RecipeIdea[],
+  now = new Date()
+): RecipeHistoryEntry {
+  return {
+    id: typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `recipe-${now.getTime()}`,
+    createdAt: now.toISOString(),
+    locale: request.locale,
+    cuisine: request.cuisine,
+    servings: request.servings,
+    maxMinutes: request.maxMinutes,
+    cookingGoal: request.cookingGoal,
+    recipes
+  };
 }

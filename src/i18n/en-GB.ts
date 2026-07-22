@@ -3,7 +3,7 @@ export const enGB = {
     name: "Fresh Squad",
     subtitle: "Know what to handle before food goes to waste.",
     valueLine: "A small team for your biggest fridge decisions.",
-    version: "V0.8 Flexible meal decisions"
+    version: "V0.9 Recipe decisions"
   },
   nav: {
     home: "Home",
@@ -291,9 +291,47 @@ export const enGB = {
     timeout: "The recipe request took too long. Your choices are still here, so you can try again.",
     rateLimited: "Too many recipe requests were made. Wait a moment and try again.",
     invalidResponse: "Qwen returned an incomplete recipe. Please generate again.",
+    cancelled: "Generation cancelled. Your choices are still here.",
+    compareEyebrow: "Compare the trade-offs",
+    compareTitle: "Two practical ways forward",
+    historyResultTitle: "A previous pair of ideas",
+    historyBadge: "History",
     option: "Option",
+    differenceTags: {
+      fastest: "Fastest",
+      uses_more: "Uses more fridge food",
+      one_pan: "Less washing up",
+      lunchbox: "Lunchbox friendly",
+      batch_friendly: "Good for extra portions",
+      no_cook: "No cooking"
+    },
+    fridgeFoodsUsed: "Fridge foods used",
+    unknownHistoryFood: "Previous fridge item",
+    equipmentNeeded: "Equipment",
+    basicEquipmentOnly: "Basic utensils only",
+    missingIngredients: "You may need",
+    nothingExtra: "Nothing extra listed",
+    viewFullRecipe: "Ingredients and full method",
     ingredients: "Ingredients",
     steps: "Method",
+    adjustThisOption: "Adjust only this option",
+    adjustments: {
+      shorter: "Make it faster",
+      one_pan: "Use one pan",
+      lunchbox: "Make it a lunchbox meal",
+      different_method: "Use a different method",
+      remove_ingredient: "Remove an ingredient",
+      missing_pantry: "Replace a pantry item"
+    },
+    removeIngredientPlaceholder: "Ingredient you do not want",
+    missingPantryPlaceholder: "Pantry item you do not have",
+    replaceOption: "Replace",
+    refiningOption: "Replacing this option…",
+    estimateOnly: "Amounts are suggestions until you confirm what you actually used.",
+    historyTitle: "Recent recipe ideas",
+    historyCount: "{count} saved locally",
+    historySeparator: " / ",
+    clearHistory: "Clear recipe history",
     boundary: "Recipe suggestions cannot judge food safety. Use-by labels and official guidance still take priority."
   },
   quickAdd: {
@@ -391,9 +429,14 @@ export const enGB = {
     removeCustom: "Remove {name}",
     pantryPolicy: "Pantry assumption",
     pantryPolicies: {
-      strict: "Use only saved staples",
-      everyday: "Suggest a few ordinary staples",
-      flexible: "Allow extras with alternatives"
+      strict: "Only use seasonings I already have",
+      everyday: "A few common extras are okay",
+      flexible: "Extra seasonings are okay with substitutes"
+    },
+    pantryPolicyDescriptions: {
+      strict: "Recipes will not add seasonings you have not selected below.",
+      everyday: "Recipes may add one or two familiar basics and will list them clearly.",
+      flexible: "Recipes may suggest a wider pantry item, but should include an easy substitute."
     },
     pantryStaples: "Staples I usually have",
     customPantry: "Other pantry staples",

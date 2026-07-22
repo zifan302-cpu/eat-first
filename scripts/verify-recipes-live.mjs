@@ -1,4 +1,5 @@
 const apiUrl = process.env.EAT_FIRST_API_URL ?? "http://127.0.0.1:3501/api/recipes";
+const refineUrl = new URL("./recipes/refine", apiUrl).toString();
 
 const shared = {
   servings: 2,
@@ -31,45 +32,82 @@ async function requestRecipes(input) {
   return body.recipes;
 }
 
+async function requestReplacement(request, recipe, otherRecipes, adjustment) {
+  const response = await fetch(refineUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ request, recipe, otherRecipes, adjustment })
+  });
+  const body = await response.json();
+  if (!response.ok) throw new Error(`${response.status} ${body.code ?? "UNKNOWN_ERROR"}`);
+  if (!body.recipe || typeof body.recipe !== "object") {
+    throw new Error("Expected one replacement recipe");
+  }
+  return body.recipe;
+}
+
+function assertStructuredRecipe(recipe) {
+  for (const field of ["differenceTags", "equipment", "missingIngredients", "usesFoods"]) {
+    if (!Array.isArray(recipe[field])) throw new Error(`Recipe is missing structured field: ${field}`);
+  }
+  if (!recipe.whyThisOption || typeof recipe.whyThisOption !== "string") {
+    throw new Error("Recipe is missing whyThisOption");
+  }
+  if (recipe.usesFoods.some((food) => !food || typeof food.foodId !== "string")) {
+    throw new Error("Recipe contains an invalid usesFoods entry");
+  }
+}
+
+const chineseRequest = {
+  ...shared,
+  locale: "zh-CN",
+  cuisine: "auto",
+  cookingGoal: "rescue_more",
+  equipment: ["hob", "rice_cooker", "steamer"],
+  customEquipment: ["tagine"],
+  pantryPolicy: "strict",
+  pantryStaples: ["cooking_oil", "salt", "soy_sauce"],
+  customPantryStaples: ["miso paste"],
+  requiredFoods: shared.requiredFoods.map((food) => ({
+    ...food,
+    name: "番茄"
+  })),
+  suggestedFoods: shared.suggestedFoods.map((food) => ({
+    ...food,
+    name: "鸡蛋"
+  })),
+  availableFoods: shared.availableFoods.map((food) => ({
+    ...food,
+    name: food.id === "spinach" ? "菠菜" : "熟米饭"
+  }))
+};
+
+const englishRequest = {
+  ...shared,
+  locale: "en-GB",
+  cuisine: "global_everyday",
+  cookingGoal: "one_pan",
+  equipment: ["hob", "oven"],
+  customEquipment: [],
+  pantryPolicy: "everyday",
+  pantryStaples: ["cooking_oil", "salt", "black_pepper"],
+  customPantryStaples: ["smoked paprika"]
+};
+
 const [chinese, english] = await Promise.all([
-  requestRecipes({
-    ...shared,
-    locale: "zh-CN",
-    cuisine: "auto",
-    cookingGoal: "rescue_more",
-    equipment: ["hob", "rice_cooker", "steamer"],
-    customEquipment: ["tagine"],
-    pantryPolicy: "strict",
-    pantryStaples: ["cooking_oil", "salt", "soy_sauce"],
-    customPantryStaples: ["miso paste"],
-    requiredFoods: shared.requiredFoods.map((food) => ({
-      ...food,
-      name: "番茄"
-    })),
-    suggestedFoods: shared.suggestedFoods.map((food) => ({
-      ...food,
-      name: "鸡蛋"
-    })),
-    availableFoods: shared.availableFoods.map((food) => ({
-      ...food,
-      name: food.id === "spinach" ? "菠菜" : "熟米饭"
-    }))
-  }),
-  requestRecipes({
-    ...shared,
-    locale: "en-GB",
-    cuisine: "global_everyday",
-    cookingGoal: "one_pan",
-    equipment: ["hob", "oven"],
-    customEquipment: [],
-    pantryPolicy: "everyday",
-    pantryStaples: ["cooking_oil", "salt", "black_pepper"],
-    customPantryStaples: ["smoked paprika"]
-  })
+  requestRecipes(chineseRequest),
+  requestRecipes(englishRequest)
 ]);
 
 const visibleText = (recipes) => recipes
-  .flatMap((recipe) => [recipe.title, recipe.summary, ...recipe.ingredients, ...recipe.steps])
+  .flatMap((recipe) => [
+    recipe.title,
+    recipe.summary,
+    recipe.whyThisOption,
+    ...recipe.ingredients,
+    ...recipe.steps,
+    ...recipe.missingIngredients
+  ])
   .join(" ");
 const cjk = /[\u3400-\u9fff]/u;
 
@@ -79,12 +117,27 @@ if (![chinese, english].every((recipes) => recipes.some((recipe) => recipe.total
   throw new Error("Each language must include an option within the requested time");
 }
 if ([chinese, english].flat().some((recipe) =>
-  [...recipe.ingredients, ...recipe.steps].some((line) => /\b(?:f\d+|food-[0-9a-f-]+)\b/i.test(line)))) {
+  [recipe.title, recipe.summary, recipe.whyThisOption, ...recipe.ingredients, ...recipe.steps, ...recipe.missingIngredients]
+    .some((line) => /\b(?:f\d+|food-[0-9a-f-]+)\b/i.test(line)))) {
   throw new Error("Internal food identifiers leaked into user-visible text");
 }
+[chinese, english].flat().forEach(assertStructuredRecipe);
+
+const replacement = await requestReplacement(
+  englishRequest,
+  english[0],
+  english.slice(1),
+  { kind: "different_method" }
+);
+assertStructuredRecipe(replacement);
+if (replacement.title.trim().toLocaleLowerCase("en-GB") === english[0].title.trim().toLocaleLowerCase("en-GB")) {
+  throw new Error("Refinement did not replace the selected recipe");
+}
+if (cjk.test(visibleText([replacement]))) throw new Error("English replacement contains Chinese text");
 
 console.log(JSON.stringify({
   chinese: chinese.map(({ title, totalMinutes }) => ({ title, totalMinutes })),
   english: english.map(({ title, totalMinutes }) => ({ title, totalMinutes })),
-  checks: ["two-options", "language", "time-limit", "no-internal-ids"]
+  replacement: { title: replacement.title, totalMinutes: replacement.totalMinutes },
+  checks: ["two-options", "language", "time-limit", "structured-contract", "no-internal-ids", "single-option-refinement"]
 }, null, 2));

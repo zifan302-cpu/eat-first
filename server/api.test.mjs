@@ -5,7 +5,8 @@ import {
   createModelFoodAliases,
   normalizeCustomLabels,
   parseRecipeJson,
-  validateRecipeOutput
+  validateRecipeOutput,
+  validateRecipeReplacement
 } from "./api.mjs";
 
 describe("barcode category confidence", () => {
@@ -89,13 +90,37 @@ describe("recipe model boundary", () => {
     );
 
     expect(recipes[0].ingredients).toEqual(["牛腩 250克", "番茄 2个"]);
-    expect(recipes[0].usesFoodIds).toEqual([beefId, tomatoId]);
+    expect(recipes[0].usesFoods.map((food) => food.foodId)).toEqual([beefId, tomatoId]);
+  });
+
+  it("parses structured comparison details and keeps only allowed equipment", () => {
+    const { aliases } = createModelFoodAliases([{ id: "tomato", name: "Tomato" }]);
+    const [recipe] = parseRecipeJson(JSON.stringify({
+      recipes: [{
+        title: "Fast tomato rice",
+        summary: "A quick one-pan meal",
+        whyThisOption: "Choose this when time matters most.",
+        totalMinutes: 15,
+        differenceTags: ["fastest", "one_pan", "invented"],
+        ingredients: ["Tomato 2", "Rice 1 bowl"],
+        steps: ["Chop the tomato", "Cook everything in one pan", "Season and serve"],
+        equipment: ["hob", "oven"],
+        missingIngredients: ["Rice 1 bowl"],
+        usesFoods: [{ foodId: "f1", estimatedAmount: 2, estimatedUnit: "item" }]
+      }]
+    }), aliases, 1, ["hob"]);
+
+    expect(recipe.differenceTags).toEqual(["fastest", "one_pan"]);
+    expect(recipe.equipment).toEqual(["hob"]);
+    expect(recipe.usesFoods).toEqual([
+      { foodId: "tomato", estimatedAmount: 2, estimatedUnit: "item" }
+    ]);
   });
 
   it("rejects output that misses required foods or the time limit", () => {
     const recipes = [
-      { title: "Fast", totalMinutes: 20, ingredients: ["Tomato"], steps: ["Cook"], usesFoodIds: ["tomato"] },
-      { title: "Slow", totalMinutes: 60, ingredients: ["Egg"], steps: ["Cook"], usesFoodIds: ["egg"] }
+      { title: "Fast", totalMinutes: 20, ingredients: ["Tomato"], steps: ["Cook quickly"], usesFoods: [{ foodId: "tomato" }] },
+      { title: "Slow", totalMinutes: 60, ingredients: ["Egg"], steps: ["Simmer slowly"], usesFoods: [{ foodId: "egg" }] }
     ];
     expect(() => validateRecipeOutput(recipes, {
       requiredFoods: [{ id: "mushroom" }],
@@ -105,6 +130,91 @@ describe("recipe model boundary", () => {
       requiredFoods: [],
       maxMinutes: 15
     })).toThrow("TIME_LIMIT_MISSING");
+  });
+
+  it("rejects a replacement that is not shorter when requested", () => {
+    const input = {
+      requiredFoods: [],
+      suggestedFoods: [{ id: "tomato" }],
+      availableFoods: []
+    };
+    const original = { title: "Tomato rice", totalMinutes: 20 };
+    const replacement = {
+      title: "Slow tomato rice",
+      totalMinutes: 30,
+      usesFoods: [{ foodId: "tomato" }]
+    };
+    expect(() => validateRecipeReplacement(
+      replacement,
+      input,
+      original,
+      { kind: "shorter" }
+    )).toThrow("REPLACEMENT_NOT_SHORTER");
+  });
+
+  it("keeps required-food coverage across a single-option replacement", () => {
+    const input = {
+      requiredFoods: [{ id: "tomato" }, { id: "egg" }],
+      suggestedFoods: [],
+      availableFoods: []
+    };
+    const original = { title: "Tomato rice", totalMinutes: 20 };
+    const replacement = {
+      title: "Egg rice",
+      totalMinutes: 18,
+      differenceTags: ["fastest"],
+      ingredients: ["Egg"],
+      steps: ["Cook egg"],
+      usesFoods: [{ foodId: "egg" }]
+    };
+    const otherRecipe = {
+      usesFoods: [{ foodId: "tomato" }]
+    };
+
+    expect(validateRecipeReplacement(
+      replacement,
+      input,
+      original,
+      { kind: "different_method" },
+      [otherRecipe]
+    )).toBe(replacement);
+    expect(() => validateRecipeReplacement(
+      replacement,
+      input,
+      original,
+      { kind: "different_method" },
+      []
+    )).toThrow("REQUIRED_FOOD_MISSING");
+  });
+
+  it("rejects a controlled adjustment when the replacement ignores its goal", () => {
+    const input = {
+      requiredFoods: [],
+      suggestedFoods: [{ id: "tomato" }],
+      availableFoods: []
+    };
+    const original = { title: "Tomato soup", totalMinutes: 20 };
+    const replacement = {
+      title: "Tomato pasta",
+      totalMinutes: 18,
+      differenceTags: ["fastest"],
+      ingredients: ["Tomato", "Salt"],
+      steps: ["Cook tomato with salt"],
+      usesFoods: [{ foodId: "tomato" }]
+    };
+
+    expect(() => validateRecipeReplacement(
+      replacement,
+      input,
+      original,
+      { kind: "one_pan" }
+    )).toThrow("REPLACEMENT_GOAL_MISSING");
+    expect(() => validateRecipeReplacement(
+      replacement,
+      input,
+      original,
+      { kind: "missing_pantry", detail: "salt" }
+    )).toThrow("REPLACEMENT_IGNORED_ADJUSTMENT");
   });
 
   it("treats custom kitchen labels as bounded names", () => {

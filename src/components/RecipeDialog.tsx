@@ -9,12 +9,16 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Messages } from "../i18n/en-GB";
+import { useAppState } from "../hooks/useAppState";
 import { COOKING_EQUIPMENT, PANTRY_STAPLES } from "../lib/constants";
 import {
   buildRecipeRequest,
+  createRecipeHistoryEntry,
   generateRecipeIdeas,
+  generateRecipeReplacement,
   isRecipeEligible,
-  type RecipeIdea
+  type RecipeAdjustment,
+  type RecipeRequest
 } from "../lib/recipes";
 import { cx } from "../lib/ui";
 import type {
@@ -23,8 +27,12 @@ import type {
   LocaleCode,
   RecipeCookingGoal,
   RecipeCuisinePreference,
+  RecipeHistoryEntry,
+  RecipeIdea,
   UserPreferences
 } from "../types/food";
+import { RecipeHistoryPanel } from "./RecipeHistoryPanel";
+import { RecipeResultCard } from "./RecipeResultCard";
 import {
   RecipeFoodSelector,
   type RecipeFoodRole
@@ -56,8 +64,10 @@ export function RecipeDialog({
   t,
   onClose
 }: RecipeDialogProps): JSX.Element {
+  const { state: appState, setState: setAppState } = useAppState();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const requestRef = useRef<AbortController | null>(null);
+  const requestSequenceRef = useRef(0);
   const wasOpenRef = useRef(false);
   const [servings, setServings] = useState<number>(preferences.defaultServings);
   const [maxMinutes, setMaxMinutes] = useState<number>(preferences.defaultMaxMinutes);
@@ -69,7 +79,11 @@ export function RecipeDialog({
   const [foodRoles, setFoodRoles] = useState<Record<string, RecipeFoodRole>>({});
   const [foodRoleNotice, setFoodRoleNotice] = useState<string | null>(null);
   const [recipes, setRecipes] = useState<RecipeIdea[]>([]);
+  const [activeRequest, setActiveRequest] = useState<RecipeRequest | null>(null);
+  const [activeHistoryId, setActiveHistoryId] = useState<string | null>(null);
+  const [viewingHistory, setViewingHistory] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [refiningIndex, setRefiningIndex] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const eligibleFoods = useMemo(() => foods.filter(isRecipeEligible), [foods]);
@@ -81,6 +95,10 @@ export function RecipeDialog({
     excluded: eligibleFoods.filter((food) => foodRoles[food.id] === "excluded")
   }), [eligibleFoods, foodRoles]);
   const requestFoodCount = roleFoods.suggested.length + roleFoods.required.length + roleFoods.available.length;
+  const foodNames = useMemo(
+    () => Object.fromEntries(foods.map((food) => [food.id, food.name])),
+    [foods]
+  );
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -101,12 +119,18 @@ export function RecipeDialog({
       setFoodRoles(createInitialRoles(eligibleFoods, suggestedFoods));
       setFoodRoleNotice(null);
       setRecipes([]);
+      setActiveRequest(null);
+      setActiveHistoryId(null);
+      setViewingHistory(false);
+      setRefiningIndex(null);
       setError(null);
     }
     if (!open && wasOpenRef.current) {
+      requestSequenceRef.current += 1;
       requestRef.current?.abort();
       requestRef.current = null;
       setLoading(false);
+      setRefiningIndex(null);
     }
     wasOpenRef.current = open;
   }, [eligibleFoods, open, preferences, suggestedFoods]);
@@ -114,10 +138,21 @@ export function RecipeDialog({
   useEffect(() => () => requestRef.current?.abort(), []);
 
   function closeDialog() {
+    requestSequenceRef.current += 1;
     requestRef.current?.abort();
     requestRef.current = null;
     setLoading(false);
+    setRefiningIndex(null);
     onClose();
+  }
+
+  function cancelGeneration() {
+    requestSequenceRef.current += 1;
+    requestRef.current?.abort();
+    requestRef.current = null;
+    setLoading(false);
+    setRefiningIndex(null);
+    setError(t.recipe.cancelled);
   }
 
   function updateFoodRole(foodId: string, nextRole: RecipeFoodRole) {
@@ -163,10 +198,14 @@ export function RecipeDialog({
     if (requestFoodCount === 0) return;
     requestRef.current?.abort();
     const controller = new AbortController();
+    const requestSequence = ++requestSequenceRef.current;
+    let timedOut = false;
     requestRef.current = controller;
     setLoading(true);
+    setRefiningIndex(null);
     setError(null);
     setRecipes([]);
+    setViewingHistory(false);
 
     try {
       const request = buildRecipeRequest(
@@ -190,16 +229,109 @@ export function RecipeDialog({
           customPantryStaples: preferences.customPantryStaples
         }
       );
-      setRecipes(await generateRecipeIdeas(request, controller.signal));
+      const timeout = window.setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+      }, 50_000);
+      try {
+        const nextRecipes = await generateRecipeIdeas(request, controller.signal);
+        if (requestSequenceRef.current !== requestSequence) return;
+        setRecipes(nextRecipes);
+        setActiveRequest(request);
+        const historyEntry = createRecipeHistoryEntry(request, nextRecipes);
+        setActiveHistoryId(historyEntry.id);
+        setAppState((current) => ({
+          ...current,
+          recipeHistory: [
+            historyEntry,
+            ...current.recipeHistory.filter((entry) => entry.id !== historyEntry.id)
+          ].slice(0, 20)
+        }));
+      } finally {
+        window.clearTimeout(timeout);
+      }
     } catch (requestError) {
-      if ((requestError as Error).name !== "AbortError") {
+      if (requestSequenceRef.current !== requestSequence) return;
+      if (timedOut) {
+        setError(t.recipe.timeout);
+      } else if ((requestError as Error).name !== "AbortError") {
         setError(errorMessage((requestError as Error).message));
       }
     } finally {
-      if (requestRef.current === controller) {
+      if (requestRef.current === controller && requestSequenceRef.current === requestSequence) {
         requestRef.current = null;
         setLoading(false);
       }
+    }
+  }
+
+  async function refineRecipe(index: number, adjustment: RecipeAdjustment) {
+    const original = recipes[index];
+    if (!activeRequest || !original || viewingHistory) return;
+    requestRef.current?.abort();
+    const controller = new AbortController();
+    const requestSequence = ++requestSequenceRef.current;
+    let timedOut = false;
+    requestRef.current = controller;
+    setRefiningIndex(index);
+    setError(null);
+    const timeout = window.setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, 50_000);
+
+    try {
+      const replacement = await generateRecipeReplacement(
+        activeRequest,
+        original,
+        adjustment,
+        recipes.filter((_, recipeIndex) => recipeIndex !== index),
+        controller.signal
+      );
+      if (requestSequenceRef.current !== requestSequence) return;
+      const nextRecipes = recipes.map((recipe, recipeIndex) =>
+        recipeIndex === index ? replacement : recipe
+      );
+      setRecipes(nextRecipes);
+      if (activeHistoryId) {
+        setAppState((current) => ({
+          ...current,
+          recipeHistory: current.recipeHistory.map((entry) =>
+            entry.id === activeHistoryId ? { ...entry, recipes: nextRecipes } : entry
+          )
+        }));
+      }
+    } catch (requestError) {
+      if (requestSequenceRef.current !== requestSequence) return;
+      if (timedOut) {
+        setError(t.recipe.timeout);
+      } else if ((requestError as Error).name !== "AbortError") {
+        setError(errorMessage((requestError as Error).message));
+      }
+    } finally {
+      window.clearTimeout(timeout);
+      if (requestRef.current === controller && requestSequenceRef.current === requestSequence) {
+        requestRef.current = null;
+        setRefiningIndex(null);
+      }
+    }
+  }
+
+  function openHistory(entry: RecipeHistoryEntry) {
+    cancelGeneration();
+    setError(null);
+    setRecipes(entry.recipes);
+    setActiveRequest(null);
+    setActiveHistoryId(entry.id);
+    setViewingHistory(true);
+  }
+
+  function clearHistory() {
+    setAppState((current) => ({ ...current, recipeHistory: [] }));
+    if (viewingHistory) {
+      setRecipes([]);
+      setViewingHistory(false);
+      setActiveHistoryId(null);
     }
   }
 
@@ -249,6 +381,14 @@ export function RecipeDialog({
       </header>
 
       <div className="space-y-4 p-5">
+        <RecipeHistoryPanel
+          history={appState.recipeHistory}
+          locale={locale}
+          t={t}
+          onOpen={openHistory}
+          onClear={clearHistory}
+        />
+
         <section>
           <div className="flex items-center justify-between gap-3">
             <p className="text-[0.65rem] font-black uppercase tracking-[0.14em] text-ink-muted">
@@ -477,7 +617,7 @@ export function RecipeDialog({
 
         {loading ? (
           <div className="grid grid-cols-2 gap-2">
-            <button type="button" onClick={() => requestRef.current?.abort()} className="fresh-button-secondary">
+            <button type="button" onClick={cancelGeneration} className="fresh-button-secondary">
               {t.actions.cancelGeneration}
             </button>
             <button type="button" disabled className="fresh-button-primary opacity-60">
@@ -498,29 +638,30 @@ export function RecipeDialog({
 
         {recipes.length > 0 ? (
           <section className="space-y-4 border-t border-paper-line pt-5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="fresh-eyebrow">{t.recipe.compareEyebrow}</p>
+                <h3 className="mt-1 font-editorial text-xl font-black text-ink">
+                  {viewingHistory ? t.recipe.historyResultTitle : t.recipe.compareTitle}
+                </h3>
+              </div>
+              {viewingHistory ? (
+                <span className="fresh-pill bg-paper">{t.recipe.historyBadge}</span>
+              ) : null}
+            </div>
             {recipes.map((recipe, index) => (
-              <article key={`${recipe.title}-${index}`} className="rounded-[1.2rem] border border-paper-line bg-paper p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-[0.62rem] font-black uppercase tracking-wider text-leaf-700">
-                      {t.recipe.option} {index + 1}
-                    </p>
-                    <h3 className="mt-1 font-editorial text-xl font-black leading-tight text-ink">
-                      {recipe.title}
-                    </h3>
-                  </div>
-                  <span className="fresh-pill shrink-0">{recipe.totalMinutes} {t.recipe.minutes}</span>
-                </div>
-                <p className="mt-2 text-sm font-medium leading-6 text-ink-muted">{recipe.summary}</p>
-                <h4 className="mt-4 text-sm font-black text-ink">{t.recipe.ingredients}</h4>
-                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm font-medium leading-5 text-ink-muted">
-                  {recipe.ingredients.map((ingredient) => <li key={ingredient}>{ingredient}</li>)}
-                </ul>
-                <h4 className="mt-4 text-sm font-black text-ink">{t.recipe.steps}</h4>
-                <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm font-medium leading-5 text-ink-muted">
-                  {recipe.steps.map((step, stepIndex) => <li key={`${stepIndex}-${step}`}>{step}</li>)}
-                </ol>
-              </article>
+              <RecipeResultCard
+                key={`${activeHistoryId ?? "current"}-${index}`}
+                recipe={recipe}
+                index={index}
+                locale={locale}
+                foodNames={foodNames}
+                t={t}
+                canRefine={!viewingHistory && activeRequest !== null}
+                refining={refiningIndex === index}
+                onRefine={(adjustment) => void refineRecipe(index, adjustment)}
+                onCancel={cancelGeneration}
+              />
             ))}
           </section>
         ) : null}

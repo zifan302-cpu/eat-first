@@ -5,6 +5,9 @@ import type {
   LocaleCode,
   PantryPolicy,
   PantryStaple,
+  RecipeDifferenceTag,
+  RecipeHistoryEntry,
+  RecipeIdea,
   RecipeCuisinePreference,
   UserPreferences
 } from "../types/food";
@@ -34,6 +37,7 @@ export function isImportableState(input: unknown): boolean {
     isObject(input) &&
     input.appId === APP_ID &&
     (input.schemaVersion === SCHEMA_VERSION ||
+      input.schemaVersion === "1.4.0" ||
       input.schemaVersion === "1.3.0" ||
       input.schemaVersion === "1.2.0" ||
       input.schemaVersion === "1.1.0" ||
@@ -46,6 +50,15 @@ const recipeServings = [1, 2, 3, 4] as const;
 const recipeMinutes = [15, 30, 45, 60] as const;
 const cuisinePreferences: RecipeCuisinePreference[] = ["auto", "chinese_home", "global_everyday"];
 const pantryPolicies: PantryPolicy[] = ["strict", "everyday", "flexible"];
+const recipeDifferenceTags: RecipeDifferenceTag[] = [
+  "fastest",
+  "uses_more",
+  "one_pan",
+  "lunchbox",
+  "batch_friendly",
+  "no_cook"
+];
+const quantityUnits = ["item", "portion", "pack", "bottle", "g", "kg", "ml", "l"] as const;
 
 function booleanRecord<T extends string>(keys: readonly T[], enabled: readonly T[] = []): Record<T, boolean> {
   const enabledSet = new Set(enabled);
@@ -174,6 +187,82 @@ function normalizeFoods(input: unknown): FoodItem[] {
   });
 }
 
+function boundedString(value: unknown, limit: number): string {
+  return typeof value === "string" ? value.trim().replace(/\s+/g, " ").slice(0, limit) : "";
+}
+
+function boundedStringList(value: unknown, itemLimit: number, charLimit: number): string[] {
+  return Array.isArray(value)
+    ? value.map((item) => boundedString(item, charLimit)).filter(Boolean).slice(0, itemLimit)
+    : [];
+}
+
+function normalizeRecipeIdea(input: unknown): RecipeIdea | null {
+  if (!isObject(input)) return null;
+  const title = boundedString(input.title, 100);
+  const steps = boundedStringList(input.steps, 7, 300);
+  if (!title || steps.length === 0) return null;
+  const usesFoods = Array.isArray(input.usesFoods)
+    ? input.usesFoods.flatMap((food) => {
+        if (!isObject(food) || typeof food.foodId !== "string") return [];
+        const estimatedAmount =
+          typeof food.estimatedAmount === "number" && food.estimatedAmount > 0
+            ? Math.min(food.estimatedAmount, 100_000)
+            : undefined;
+        const estimatedUnit = quantityUnits.includes(food.estimatedUnit as (typeof quantityUnits)[number])
+          ? (food.estimatedUnit as (typeof quantityUnits)[number])
+          : undefined;
+        return [{ foodId: food.foodId.slice(0, 100), estimatedAmount, estimatedUnit }];
+      }).slice(0, 8)
+    : [];
+  return {
+    title,
+    summary: boundedString(input.summary, 300),
+    whyThisOption: boundedString(input.whyThisOption, 240),
+    totalMinutes: Math.min(180, Math.max(1, Number(input.totalMinutes) || 30)),
+    differenceTags: Array.isArray(input.differenceTags)
+      ? input.differenceTags
+          .filter((tag): tag is RecipeDifferenceTag => recipeDifferenceTags.includes(tag as RecipeDifferenceTag))
+          .slice(0, 3)
+      : [],
+    ingredients: boundedStringList(input.ingredients, 16, 160),
+    steps,
+    equipment: boundedStringList(input.equipment, 8, 40),
+    missingIngredients: boundedStringList(input.missingIngredients, 8, 100),
+    usesFoods
+  };
+}
+
+function normalizeRecipeHistory(input: unknown): RecipeHistoryEntry[] {
+  if (!Array.isArray(input)) return [];
+  return input.flatMap((entry) => {
+    if (!isObject(entry) || typeof entry.id !== "string" || typeof entry.createdAt !== "string") {
+      return [];
+    }
+    const createdAtDate = new Date(entry.createdAt);
+    if (Number.isNaN(createdAtDate.getTime())) return [];
+    const recipes = Array.isArray(entry.recipes)
+      ? entry.recipes.map(normalizeRecipeIdea).filter((recipe): recipe is RecipeIdea => recipe !== null).slice(0, 2)
+      : [];
+    if (recipes.length === 0) return [];
+    return [{
+      id: entry.id.slice(0, 100),
+      createdAt: createdAtDate.toISOString(),
+      locale: (entry.locale === "zh-CN" ? "zh-CN" : "en-GB") as LocaleCode,
+      cuisine: cuisinePreferences.includes(entry.cuisine as RecipeCuisinePreference)
+        ? (entry.cuisine as RecipeCuisinePreference)
+        : "auto",
+      servings: Math.min(8, Math.max(1, Number(entry.servings) || 1)),
+      maxMinutes: Math.min(120, Math.max(10, Number(entry.maxMinutes) || 30)),
+      cookingGoal: ["auto", "fast", "rescue_more", "one_pan", "lunchbox", "batch_cook", "no_cook"]
+        .includes(entry.cookingGoal as string)
+          ? (entry.cookingGoal as RecipeHistoryEntry["cookingGoal"])
+          : "auto",
+      recipes
+    }];
+  }).slice(0, 20);
+}
+
 export function createDefaultState(now = new Date()): AppStateEnvelope {
   const at = isoNow(now);
   return {
@@ -187,6 +276,7 @@ export function createDefaultState(now = new Date()): AppStateEnvelope {
       recipe: defaultRecipePreferences()
     },
     foods: [],
+    recipeHistory: [],
     meta: {
       createdAt: at,
       updatedAt: at
@@ -218,6 +308,7 @@ export function migrateState(input: unknown): AppStateEnvelope {
       recipe: normalizeRecipePreferences(preferences.recipe)
     },
     foods,
+    recipeHistory: normalizeRecipeHistory(input.recipeHistory),
     meta: {
       createdAt: typeof meta.createdAt === "string" ? meta.createdAt : base.meta.createdAt,
       updatedAt: typeof meta.updatedAt === "string" ? meta.updatedAt : base.meta.updatedAt

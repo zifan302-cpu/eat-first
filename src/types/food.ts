@@ -31,6 +31,22 @@ export type CookingEquipment =
 
 export type PantryPolicy = "strict" | "everyday" | "flexible";
 
+export type RecipeDifferenceTag =
+  | "fastest"
+  | "uses_more"
+  | "one_pan"
+  | "lunchbox"
+  | "batch_friendly"
+  | "no_cook";
+
+export type RecipeAdjustmentKind =
+  | "shorter"
+  | "one_pan"
+  | "lunchbox"
+  | "different_method"
+  | "remove_ingredient"
+  | "missing_pantry";
+
 export type PantryStaple =
   | "cooking_oil"
   | "salt"
@@ -115,6 +131,36 @@ export interface FoodItem {
   actionHistory: FoodActionRecord[];
 }
 
+export interface RecipeFoodUse {
+  foodId: string;
+  estimatedAmount?: number;
+  estimatedUnit?: FoodQuantityUnit;
+}
+
+export interface RecipeIdea {
+  title: string;
+  summary: string;
+  whyThisOption: string;
+  totalMinutes: number;
+  differenceTags: RecipeDifferenceTag[];
+  ingredients: string[];
+  steps: string[];
+  equipment: string[];
+  missingIngredients: string[];
+  usesFoods: RecipeFoodUse[];
+}
+
+export interface RecipeHistoryEntry {
+  id: string;
+  createdAt: string;
+  locale: LocaleCode;
+  cuisine: RecipeCuisinePreference;
+  servings: number;
+  maxMinutes: number;
+  cookingGoal: RecipeCookingGoal;
+  recipes: RecipeIdea[];
+}
+
 export interface UserPreferences {
   locale: LocaleCode;
   topN: number;
@@ -139,10 +185,11 @@ export interface AppMeta {
 }
 
 export interface AppStateEnvelope {
-  schemaVersion: "1.4.0";
+  schemaVersion: "1.5.0";
   appId: "eat-first";
   preferences: UserPreferences;
   foods: FoodItem[];
+  recipeHistory: RecipeHistoryEntry[];
   meta: AppMeta;
 }
 

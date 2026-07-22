@@ -67,7 +67,7 @@ const makeFood = (id, name, category, dateLabelType, labelDate, quantityAmount, 
 });
 
 const sampleState = {
-  schemaVersion: "1.4.0",
+  schemaVersion: "1.5.0",
   appId: "eat-first",
   preferences: {
     locale: "zh-CN",
@@ -129,6 +129,47 @@ const sampleState = {
       { id: "saved-eaten", type: "eaten", at }
     ])
   ],
+  recipeHistory: [{
+    id: "history-sample",
+    createdAt: at,
+    locale: "zh-CN",
+    cuisine: "chinese_home",
+    servings: 2,
+    maxMinutes: 30,
+    cookingGoal: "one_pan",
+    recipes: [
+      {
+        title: "番茄蘑菇焖饭",
+        summary: "用电饭煲一锅完成，准备时间短。",
+        whyThisOption: "适合想少洗锅，同时处理两种临期食材。",
+        totalMinutes: 28,
+        differenceTags: ["one_pan", "uses_more"],
+        ingredients: ["番茄 2 个", "蘑菇 150 克", "熟米饭 2 碗"],
+        steps: ["番茄和蘑菇切块。", "放入电饭煲加热。", "拌入米饭并调味。", "焖至热透后盛出。"],
+        equipment: ["rice_cooker"],
+        missingIngredients: ["熟米饭 2 碗"],
+        usesFoods: [
+          { foodId: "tomato", estimatedAmount: 2, estimatedUnit: "item" },
+          { foodId: "mushroom", estimatedAmount: 150, estimatedUnit: "g" }
+        ]
+      },
+      {
+        title: "番茄蘑菇汤面",
+        summary: "炉灶快煮，口味清爽，二十分钟内完成。",
+        whyThisOption: "适合更快吃上，也能保留一部分蘑菇做下一餐。",
+        totalMinutes: 18,
+        differenceTags: ["fastest"],
+        ingredients: ["番茄 1 个", "蘑菇 100 克", "面条 2 份"],
+        steps: ["番茄切块，蘑菇切片。", "锅中煮开清汤。", "加入番茄、蘑菇和面条。", "煮熟后调味。"],
+        equipment: ["hob"],
+        missingIngredients: ["面条 2 份"],
+        usesFoods: [
+          { foodId: "tomato", estimatedAmount: 1, estimatedUnit: "item" },
+          { foodId: "mushroom", estimatedAmount: 100, estimatedUnit: "g" }
+        ]
+      }
+    ]
+  }],
   meta: { createdAt: at, updatedAt: at }
 };
 
@@ -152,12 +193,12 @@ async function capture(name) {
   });
   const outputDir = resolve("output/playwright");
   await mkdir(outputDir, { recursive: true });
-  const output = join(outputDir, `eat-first-v08-${name}.png`);
+  const output = join(outputDir, `eat-first-v09-${name}.png`);
   await writeFile(output, Buffer.from(result.data, "base64"));
   console.log(output);
 }
 
-await evaluate("localStorage.removeItem('eat-first:v1:state')");
+await evaluate("localStorage.removeItem('eat-first:v1:state'); sessionStorage.removeItem('eat-first:add-food-draft')");
 await reload();
 await capture("onboarding-430x900");
 
@@ -196,6 +237,19 @@ for (const [name, hash] of [
     await evaluate("Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.includes('\u751f\u6210\u83dc\u8c31\u7075\u611f'))?.click()");
     await delay(350);
     await capture("recipe-setup-430x900");
+    await evaluate("Array.from(document.querySelectorAll('summary')).find((summary) => summary.textContent?.includes('\u6700\u8fd1\u751f\u6210\u7684\u83dc\u8c31'))?.click()");
+    await delay(200);
+    await evaluate(`(() => {
+      const summary = Array.from(document.querySelectorAll('summary')).find((item) => item.textContent?.includes('\u6700\u8fd1\u751f\u6210\u7684\u83dc\u8c31'));
+      summary?.parentElement?.querySelector('button')?.click();
+    })()`);
+    await delay(250);
+    await evaluate("Array.from(document.querySelectorAll('h3')).find((heading) => heading.textContent?.includes('\u4e4b\u524d\u4fdd\u5b58'))?.scrollIntoView({ block: 'start' })");
+    await delay(200);
+    await capture("recipe-history-result-430x900");
+    await reload();
+    await evaluate("Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.includes('\u751f\u6210\u83dc\u8c31\u7075\u611f'))?.click()");
+    await delay(350);
     await evaluate("Array.from(document.querySelectorAll('summary')).find((summary) => summary.textContent?.includes('\u8c03\u6574\u98df\u6750\u8303\u56f4'))?.click()");
     await delay(250);
     await capture("recipe-food-roles-430x900");
