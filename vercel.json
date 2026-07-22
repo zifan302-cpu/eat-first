@@ -4,7 +4,10 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "functions": {
-    "api/*.mjs": {
+    "api/recipes.mjs": {
+      "maxDuration": 60
+    },
+    "api/recipes/refine.mjs": {
       "maxDuration": 60
     }
   }

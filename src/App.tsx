@@ -3,8 +3,8 @@ import { AppShell } from "./components/AppShell";
 import { AddItemPage } from "./routes/AddItemPage";
 import { FridgePage } from "./routes/FridgePage";
 import { HomePage } from "./routes/HomePage";
+import { RecipesPage } from "./routes/RecipesPage";
 import { SettingsPage } from "./routes/SettingsPage";
-import { SquadPage } from "./routes/SquadPage";
 import { StatsPage } from "./routes/StatsPage";
 
 export function App(): JSX.Element {
@@ -14,7 +14,8 @@ export function App(): JSX.Element {
         <Route path="/" element={<HomePage />} />
         <Route path="/add" element={<AddItemPage />} />
         <Route path="/fridge" element={<FridgePage />} />
-        <Route path="/squad" element={<SquadPage />} />
+        <Route path="/recipes" element={<RecipesPage />} />
+        <Route path="/squad" element={<Navigate to="/recipes" replace />} />
         <Route path="/stats" element={<StatsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />

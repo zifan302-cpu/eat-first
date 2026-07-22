@@ -1,4 +1,4 @@
-import { House, Refrigerator, Plus, Settings, Sprout } from "lucide-react";
+import { ChefHat, House, Refrigerator, Plus, Settings } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import type { Messages } from "../i18n/en-GB";
 import { cx } from "../lib/ui";
@@ -7,7 +7,7 @@ const links = [
   { to: "/", labelKey: "home", icon: House },
   { to: "/add", labelKey: "add", icon: Plus },
   { to: "/fridge", labelKey: "fridge", icon: Refrigerator },
-  { to: "/squad", labelKey: "squad", icon: Sprout },
+  { to: "/recipes", labelKey: "recipes", icon: ChefHat },
   { to: "/settings", labelKey: "settings", icon: Settings }
 ] as const;
 

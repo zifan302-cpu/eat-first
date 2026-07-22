@@ -1,5 +1,7 @@
 const productCache = new Map();
 const requestBuckets = new Map();
+const PRODUCT_CACHE_SUCCESS_TTL_MS = 24 * 60 * 60 * 1000;
+const PRODUCT_CACHE_MISS_TTL_MS = 60 * 1000;
 
 export function sendJson(response, status, payload) {
   response.writeHead(status, {
@@ -96,10 +98,14 @@ async function handleBarcode(request, response, url) {
   const locale = url.searchParams.get("locale") === "zh-CN" ? "zh-CN" : "en-GB";
   const cacheKey = `${code}:${locale}`;
   const cached = productCache.get(cacheKey);
-  if (cached && Date.now() - cached.at < 24 * 60 * 60 * 1000) {
+  const cacheTtl = cached?.status === 200
+    ? PRODUCT_CACHE_SUCCESS_TTL_MS
+    : PRODUCT_CACHE_MISS_TTL_MS;
+  if (cached && Date.now() - cached.at < cacheTtl) {
     sendJson(response, cached.status, cached.payload);
     return true;
   }
+  if (cached) productCache.delete(cacheKey);
 
   try {
     const fields = [
@@ -111,22 +117,48 @@ async function handleBarcode(request, response, url) {
       "quantity",
       "categories_tags"
     ].join(",");
-    const upstream = await fetch(
-      `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=${fields}`,
-      {
-        headers: {
-          "User-Agent":
-            process.env.OPEN_FOOD_FACTS_USER_AGENT ||
-            "FridgeFreshSquad/0.6 (https://github.com/zifan302-cpu/eat-first)"
-        },
-        signal: AbortSignal.timeout(10_000)
+    const userAgent = process.env.OPEN_FOOD_FACTS_USER_AGENT ||
+      "FridgeFreshSquad/0.10 (https://github.com/zifan302-cpu/eat-first)";
+    const endpoints = ["world.openfoodfacts.org", "uk.openfoodfacts.org"];
+    let data = null;
+    let source = null;
+    let receivedResponse = false;
+
+    for (const host of endpoints) {
+      try {
+        const upstream = await fetch(
+          `https://${host}/api/v2/product/${encodeURIComponent(code)}.json?fields=${fields}`,
+          { headers: { "User-Agent": userAgent }, signal: AbortSignal.timeout(8_000) }
+        );
+        if (!upstream.ok) {
+          if (upstream.status === 404) {
+            receivedResponse = true;
+            continue;
+          }
+          console.warn("[barcode] Open Food Facts endpoint failed", { code, host, status: upstream.status });
+          continue;
+        }
+        receivedResponse = true;
+        const candidate = await upstream.json();
+        if (candidate.status === 1 && candidate.product) {
+          data = candidate;
+          source = host;
+          break;
+        }
+      } catch (error) {
+        console.warn("[barcode] Open Food Facts endpoint unavailable", {
+          code,
+          host,
+          error: error instanceof Error ? error.name : "unknown"
+        });
       }
-    );
-    if (!upstream.ok) throw new Error(`OFF_${upstream.status}`);
-    const data = await upstream.json();
-    if (data.status !== 1 || !data.product) {
+    }
+
+    if (!data?.product) {
+      if (!receivedResponse) throw new Error("OFF_UNAVAILABLE");
       const payload = { code: "PRODUCT_NOT_FOUND" };
       productCache.set(cacheKey, { at: Date.now(), status: 404, payload });
+      console.info("[barcode] product not found", { code });
       sendJson(response, 404, payload);
       return true;
     }
@@ -152,8 +184,13 @@ async function handleBarcode(request, response, url) {
       }
     };
     productCache.set(cacheKey, { at: Date.now(), status: 200, payload });
+    console.info("[barcode] product found", { code, source });
     sendJson(response, 200, payload);
-  } catch {
+  } catch (error) {
+    console.error("[barcode] lookup failed", {
+      code,
+      error: error instanceof Error ? error.message : "unknown"
+    });
     sendJson(response, 502, { code: "BARCODE_LOOKUP_FAILED" });
   }
   return true;

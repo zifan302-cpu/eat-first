@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import handler from "../api/[...path].mjs";
+import barcodeHandler from "../api/barcode/[code].mjs";
+import recipesHandler from "../api/recipes.mjs";
+import refineHandler from "../api/recipes/refine.mjs";
 
 function createResponse() {
   return {
@@ -55,7 +57,7 @@ const recipeRequest = {
   excludedFoodIds: []
 };
 
-describe("Vercel API catch-all", () => {
+describe("explicit Vercel API routes", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     delete process.env.QWEN_API_KEY;
@@ -64,7 +66,7 @@ describe("Vercel API catch-all", () => {
 
   it("routes the nested recipe refinement endpoint through the shared handler", async () => {
     const response = createResponse();
-    await handler({
+    await refineHandler({
       url: "/api/recipes/refine",
       method: "GET",
       headers: { host: "localhost", "x-forwarded-for": "routing-test" }
@@ -72,6 +74,34 @@ describe("Vercel API catch-all", () => {
 
     expect(response.statusCode).toBe(405);
     expect(response.body).toEqual({ code: "METHOD_NOT_ALLOWED" });
+  });
+
+  it("routes a dynamic barcode path and returns the upstream product", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response(JSON.stringify({
+      status: 1,
+      product: {
+        product_name: "Schweppes lemonade",
+        brands: "Schweppes",
+        quantity: "2l",
+        categories_tags: ["en:lemonades", "en:beverages"]
+      }
+    }), { status: 200, headers: { "Content-Type": "application/json" } }));
+    const response = createResponse();
+
+    await barcodeHandler({
+      url: "/api/barcode/5000193900861?locale=en-GB",
+      method: "GET",
+      headers: { host: "localhost", "x-forwarded-for": "barcode-routing-test" }
+    }, response);
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body.product).toMatchObject({
+      barcode: "5000193900861",
+      name: "Schweppes lemonade",
+      brand: "Schweppes",
+      quantityText: "2l",
+      category: "drink"
+    });
   });
 
   it("repairs one contract failure instead of returning a transient 502", async () => {
@@ -117,7 +147,7 @@ describe("Vercel API catch-all", () => {
       .mockResolvedValueOnce(modelResponse(repairedRecipes));
     const response = createResponse();
 
-    await handler({
+    await recipesHandler({
       url: "/api/recipes",
       method: "POST",
       headers: { host: "localhost", "x-forwarded-for": "repair-test" },
@@ -148,7 +178,7 @@ describe("Vercel API catch-all", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(modelResponse([replacement]));
     const response = createResponse();
 
-    await handler({
+    await refineHandler({
       url: "/api/recipes/refine",
       method: "POST",
       headers: { host: "localhost", "x-forwarded-for": "refine-post-test" },
@@ -210,7 +240,7 @@ describe("Vercel API catch-all", () => {
       .mockResolvedValueOnce(modelResponse(invalidRecipes));
     const response = createResponse();
 
-    await handler({
+    await recipesHandler({
       url: "/api/recipes",
       method: "POST",
       headers: { host: "localhost", "x-forwarded-for": "repair-failure-test" },

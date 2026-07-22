@@ -3,12 +3,13 @@ export const enGB = {
     name: "Fresh Squad",
     subtitle: "Know what to handle before food goes to waste.",
     valueLine: "A small team for your biggest fridge decisions.",
-    version: "V0.9.1 Recipe reliability"
+    version: "V0.10 Recipes at the centre"
   },
   nav: {
     home: "Home",
     add: "Add",
     fridge: "Fridge",
+    recipes: "Recipes",
     stats: "Wins",
     squad: "Squad",
     settings: "Settings"
@@ -236,7 +237,7 @@ export const enGB = {
     action: "Generate recipe ideas",
     badge: "Qwen",
     dialogTitle: "A few useful ideas, not an endless feed",
-    dialogBody: "The squad suggests what deserves attention. Qwen can then choose from the rest of your fridge without forcing everything into one dish.",
+    dialogBody: "Start from foods that need attention, then let Qwen combine the rest of your fridge without forcing everything into one dish.",
     suggestedFoods: "Suggested for today",
     availableFoodCount: "{count} more available",
     autoPickAvailable: "No food is pinned. Qwen can choose naturally from the available fridge foods.",

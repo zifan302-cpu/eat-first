@@ -2,9 +2,10 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
 const cdpPort = process.env.EAT_FIRST_CDP_PORT ?? "9223";
+const previewUrl = process.env.EAT_FIRST_PREVIEW_URL ?? "http://127.0.0.1:4173";
 const pages = await fetch(`http://127.0.0.1:${cdpPort}/json`).then((response) => response.json());
-const page = pages.find((entry) => entry.type === "page" && entry.url.startsWith("http://127.0.0.1:4173"));
-if (!page) throw new Error(`Local preview page not found on CDP port ${cdpPort}`);
+const page = pages.find((entry) => entry.type === "page" && entry.url.startsWith(previewUrl));
+if (!page) throw new Error(`Local preview ${previewUrl} not found on CDP port ${cdpPort}`);
 
 const socket = new WebSocket(page.webSocketDebuggerUrl);
 let nextId = 0;
@@ -193,7 +194,7 @@ async function capture(name) {
   });
   const outputDir = resolve("output/playwright");
   await mkdir(outputDir, { recursive: true });
-  const output = join(outputDir, `eat-first-v091-${name}.png`);
+  const output = join(outputDir, `eat-first-v010-${name}.png`);
   await writeFile(output, Buffer.from(result.data, "base64"));
   console.log(output);
 }
@@ -226,16 +227,23 @@ for (const [name, hash] of [
   ["home-430x900", "#/"],
   ["add-430x900", "#/add"],
   ["fridge-430x900", "#/fridge"],
-  ["squad-430x900", "#/squad"],
+  ["recipes-430x900", "#/recipes"],
   ["stats-430x900", "#/stats"],
   ["settings-430x900", "#/settings"]
 ]) {
   await evaluate(`location.hash = ${JSON.stringify(hash)}`);
   await delay(750);
   await capture(name);
-  if (name === "home-430x900") {
-    await evaluate("Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.includes('\u751f\u6210\u83dc\u8c31\u7075\u611f'))?.click()");
-    await delay(350);
+  const navigation = await evaluate(`Array.from(document.querySelectorAll('nav a')).map((link) => ({
+    label: link.textContent?.trim(),
+    left: Math.round(link.getBoundingClientRect().left),
+    width: Math.round(link.getBoundingClientRect().width)
+  }))`);
+  if (navigation.result.value?.length !== 5) {
+    throw new Error(`Expected five primary navigation links on ${name}: ${JSON.stringify(navigation.result.value)}`);
+  }
+  console.log(JSON.stringify({ page: name, navigation: navigation.result.value }));
+  if (name === "recipes-430x900") {
     await capture("recipe-setup-430x900");
     await evaluate("Array.from(document.querySelectorAll('summary')).find((summary) => summary.textContent?.includes('\u6700\u8fd1\u751f\u6210\u7684\u83dc\u8c31'))?.click()");
     await delay(200);
@@ -248,8 +256,6 @@ for (const [name, hash] of [
     await delay(200);
     await capture("recipe-history-result-430x900");
     await reload();
-    await evaluate("Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.includes('\u751f\u6210\u83dc\u8c31\u7075\u611f'))?.click()");
-    await delay(350);
     await evaluate("Array.from(document.querySelectorAll('summary')).find((summary) => summary.textContent?.includes('\u8c03\u6574\u98df\u6750\u8303\u56f4'))?.click()");
     await delay(250);
     await capture("recipe-food-roles-430x900");
@@ -257,7 +263,6 @@ for (const [name, hash] of [
     await evaluate("Array.from(document.querySelectorAll('summary')).find((summary) => summary.textContent?.includes('\u672c\u6b21\u505a\u996d\u6761\u4ef6'))?.click()");
     await delay(250);
     await capture("recipe-meal-setup-430x900");
-    await evaluate("Array.from(document.querySelectorAll('button')).find((button) => button.getAttribute('aria-label')?.includes('\u5173\u95ed'))?.click()");
   }
   if (name === "fridge-430x900") {
     await evaluate("document.querySelector('section.space-y-2 article button')?.click()");

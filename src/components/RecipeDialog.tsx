@@ -41,12 +41,13 @@ import {
 
 interface RecipeDialogProps {
   open: boolean;
+  embedded?: boolean;
   suggestedFoods: FoodItem[];
   foods: FoodItem[];
   locale: LocaleCode;
   preferences: UserPreferences["recipe"];
   t: Messages;
-  onClose: () => void;
+  onClose?: () => void;
 }
 
 function createInitialRoles(foods: FoodItem[], suggestedFoods: FoodItem[]): Record<string, RecipeFoodRole> {
@@ -58,6 +59,7 @@ function createInitialRoles(foods: FoodItem[], suggestedFoods: FoodItem[]): Reco
 
 export function RecipeDialog({
   open,
+  embedded = false,
   suggestedFoods,
   foods,
   locale,
@@ -101,16 +103,18 @@ export function RecipeDialog({
     () => Object.fromEntries(foods.map((food) => [food.id, food.name])),
     [foods]
   );
+  const active = embedded || open;
 
   useEffect(() => {
+    if (embedded) return;
     const dialog = dialogRef.current;
     if (!dialog) return;
     if (open && !dialog.open) dialog.showModal();
     if (!open && dialog.open) dialog.close();
-  }, [open]);
+  }, [embedded, open]);
 
   useEffect(() => {
-    if (open && !wasOpenRef.current) {
+    if (active && !wasOpenRef.current) {
       setServings(preferences.defaultServings);
       setMaxMinutes(preferences.defaultMaxMinutes);
       setDietaryNotes(preferences.dietaryNotes);
@@ -128,15 +132,15 @@ export function RecipeDialog({
       setRefineError(null);
       setError(null);
     }
-    if (!open && wasOpenRef.current) {
+    if (!active && wasOpenRef.current) {
       requestSequenceRef.current += 1;
       requestRef.current?.abort();
       requestRef.current = null;
       setLoading(false);
       setRefiningIndex(null);
     }
-    wasOpenRef.current = open;
-  }, [eligibleFoods, open, preferences, suggestedFoods]);
+    wasOpenRef.current = active;
+  }, [active, eligibleFoods, preferences, suggestedFoods]);
 
   useEffect(() => () => requestRef.current?.abort(), []);
 
@@ -147,7 +151,7 @@ export function RecipeDialog({
     setLoading(false);
     setRefiningIndex(null);
     setRefineError(null);
-    onClose();
+    onClose?.();
   }
 
   function cancelGeneration() {
@@ -362,29 +366,23 @@ export function RecipeDialog({
       ].join(t.recipe.summarySeparator)
     : t.recipe.noSpecialEquipment;
 
-  return (
-    <dialog
-      ref={dialogRef}
-      aria-labelledby="recipe-dialog-title"
-      onCancel={(event) => {
-        event.preventDefault();
-        closeDialog();
-      }}
-      className="m-auto max-h-[90vh] w-[calc(100%_-_2rem)] max-w-md overflow-y-auto rounded-[1.6rem] border border-ink/20 bg-paper-soft p-0 text-ink shadow-lift backdrop:bg-ink/45"
-    >
+  const content = (
+    <>
       <header className="border-b border-paper-line bg-ink p-5 text-paper">
         <div className="flex items-center justify-between gap-3">
           <span className="grid h-11 w-11 place-items-center rounded-[0.9rem] bg-paper/10 text-[#D8CFAE]">
             <WandSparkles className="h-5 w-5" aria-hidden />
           </span>
-          <button
-            type="button"
-            onClick={closeDialog}
-            aria-label={t.actions.close}
-            className="grid h-10 w-10 place-items-center rounded-full text-paper/75 hover:bg-paper/10"
-          >
-            <X className="h-5 w-5" aria-hidden />
-          </button>
+          {!embedded ? (
+            <button
+              type="button"
+              onClick={closeDialog}
+              aria-label={t.actions.close}
+              className="grid h-10 w-10 place-items-center rounded-full text-paper/75 hover:bg-paper/10"
+            >
+              <X className="h-5 w-5" aria-hidden />
+            </button>
+          ) : null}
         </div>
         <p className="mt-4 text-[0.65rem] font-black uppercase tracking-[0.18em] text-[#D8CFAE]">
           {t.recipe.eyebrow}
@@ -685,6 +683,31 @@ export function RecipeDialog({
 
         <p className="text-xs font-semibold leading-5 text-ink-muted">{t.recipe.boundary}</p>
       </div>
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <section
+        aria-labelledby="recipe-dialog-title"
+        className="overflow-hidden rounded-[1.6rem] border border-ink/20 bg-paper-soft text-ink shadow-lift"
+      >
+        {content}
+      </section>
+    );
+  }
+
+  return (
+    <dialog
+      ref={dialogRef}
+      aria-labelledby="recipe-dialog-title"
+      onCancel={(event) => {
+        event.preventDefault();
+        closeDialog();
+      }}
+      className="m-auto max-h-[90vh] w-[calc(100%_-_2rem)] max-w-md overflow-y-auto rounded-[1.6rem] border border-ink/20 bg-paper-soft p-0 text-ink shadow-lift backdrop:bg-ink/45"
+    >
+      {content}
     </dialog>
   );
 }

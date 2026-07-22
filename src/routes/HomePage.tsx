@@ -1,10 +1,8 @@
 import { ArrowRight, CheckCircle2, Plus, WandSparkles } from "lucide-react";
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { CompactFoodCard } from "../components/CompactFoodCard";
 import { FutureFeatureCard } from "../components/FutureFeatureCard";
 import { PageHeader } from "../components/PageHeader";
-import { RecipeDialog } from "../components/RecipeDialog";
 import { SafetyBanner } from "../components/SafetyBanner";
 import { useAppState } from "../hooks/useAppState";
 import { useFoodActions } from "../hooks/useFoodActions";
@@ -12,17 +10,13 @@ import { useLocale } from "../hooks/useLocale";
 import { CHARACTERS } from "../lib/characters";
 import { getGameProgress } from "../lib/game";
 import { getTopFoods } from "../lib/priority";
-import { isRecipeEligible } from "../lib/recipes";
 
 export function HomePage(): JSX.Element {
   const { state, setState } = useAppState();
   const actions = useFoodActions();
   const { locale, t } = useLocale();
-  const [recipeOpen, setRecipeOpen] = useState(false);
+  const navigate = useNavigate();
   const topFoods = getTopFoods(state.foods, state.preferences.topN);
-  const recipeCandidates = getTopFoods(state.foods, state.foods.length);
-  const recipeFoods = recipeCandidates.filter(isRecipeEligible).slice(0, 8);
-  const recipeSuggestedFoods = recipeFoods.slice(0, 3);
   const game = getGameProgress(state.foods);
   const captain = CHARACTERS.tomato;
   const scout = CHARACTERS.broccoli;
@@ -148,7 +142,7 @@ export function HomePage(): JSX.Element {
         body={t.recipe.body}
         actionLabel={t.recipe.action}
         badge={t.recipe.badge}
-        onOpen={() => setRecipeOpen(true)}
+        onOpen={() => navigate("/recipes")}
       />
 
       {state.preferences.showSafetyBanner ? (
@@ -163,15 +157,6 @@ export function HomePage(): JSX.Element {
         />
       ) : null}
 
-      <RecipeDialog
-        open={recipeOpen}
-        suggestedFoods={recipeSuggestedFoods}
-        foods={recipeCandidates}
-        locale={locale}
-        preferences={state.preferences.recipe}
-        t={t}
-        onClose={() => setRecipeOpen(false)}
-      />
     </div>
   );
 }

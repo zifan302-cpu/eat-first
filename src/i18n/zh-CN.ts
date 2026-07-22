@@ -5,12 +5,13 @@ export const zhCN: Messages = {
     name: "冰箱小鲜队",
     subtitle: "在食物浪费前，先知道今天该处理什么。",
     valueLine: "一支帮你处理冰箱大事的小队。",
-    version: "V0.9.1 菜谱可靠性修复"
+    version: "V0.10 菜谱主入口"
   },
   nav: {
     home: "首页",
     add: "添加",
     fridge: "冰箱",
+    recipes: "菜谱",
     stats: "成果",
     squad: "小队",
     settings: "设置"
@@ -238,7 +239,7 @@ export const zhCN: Messages = {
     action: "生成菜谱灵感",
     badge: "千问",
     dialogTitle: "只给少量真正有用的方案",
-    dialogBody: "小队先建议值得处理的食材，千问再从冰箱其余食材中自行搭配，不会强行把所有东西塞进一道菜。",
+    dialogBody: "先从需要处理的食材出发，千问再从冰箱其余食材中自然搭配，不会强行把所有东西塞进一道菜。",
     suggestedFoods: "今天建议先用",
     availableFoodCount: "另有 {count} 件可搭配",
     autoPickAvailable: "当前没有固定食材，千问会从可用冰箱食材中自然搭配。",
