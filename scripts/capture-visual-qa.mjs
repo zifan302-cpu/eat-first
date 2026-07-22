@@ -193,7 +193,7 @@ async function capture(name) {
   });
   const outputDir = resolve("output/playwright");
   await mkdir(outputDir, { recursive: true });
-  const output = join(outputDir, `eat-first-v09-${name}.png`);
+  const output = join(outputDir, `eat-first-v091-${name}.png`);
   await writeFile(output, Buffer.from(result.data, "base64"));
   console.log(output);
 }

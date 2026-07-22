@@ -11,6 +11,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Messages } from "../i18n/en-GB";
 import { useAppState } from "../hooks/useAppState";
 import { COOKING_EQUIPMENT, PANTRY_STAPLES } from "../lib/constants";
+import { recipeErrorMessageKey } from "../lib/recipe-errors";
 import {
   buildRecipeRequest,
   createRecipeHistoryEntry,
@@ -84,6 +85,7 @@ export function RecipeDialog({
   const [viewingHistory, setViewingHistory] = useState(false);
   const [loading, setLoading] = useState(false);
   const [refiningIndex, setRefiningIndex] = useState<number | null>(null);
+  const [refineError, setRefineError] = useState<{ index: number; message: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const eligibleFoods = useMemo(() => foods.filter(isRecipeEligible), [foods]);
@@ -123,6 +125,7 @@ export function RecipeDialog({
       setActiveHistoryId(null);
       setViewingHistory(false);
       setRefiningIndex(null);
+      setRefineError(null);
       setError(null);
     }
     if (!open && wasOpenRef.current) {
@@ -143,16 +146,22 @@ export function RecipeDialog({
     requestRef.current = null;
     setLoading(false);
     setRefiningIndex(null);
+    setRefineError(null);
     onClose();
   }
 
   function cancelGeneration() {
+    const cancelledRefinement = refiningIndex;
     requestSequenceRef.current += 1;
     requestRef.current?.abort();
     requestRef.current = null;
     setLoading(false);
     setRefiningIndex(null);
-    setError(t.recipe.cancelled);
+    if (cancelledRefinement !== null) {
+      setRefineError({ index: cancelledRefinement, message: t.recipe.refinementCancelled });
+    } else {
+      setError(t.recipe.cancelled);
+    }
   }
 
   function updateFoodRole(foodId: string, nextRole: RecipeFoodRole) {
@@ -187,11 +196,11 @@ export function RecipeDialog({
   }
 
   function errorMessage(code: string): string {
-    if (code === "AI_NOT_CONFIGURED") return t.recipe.notConfigured;
-    if (code === "RATE_LIMITED") return t.recipe.rateLimited;
-    if (code === "RECIPE_TIMEOUT") return t.recipe.timeout;
-    if (code === "RECIPE_GENERATION_FAILED") return t.recipe.invalidResponse;
-    return t.recipe.error;
+    return t.recipe[recipeErrorMessageKey(code, "generation")];
+  }
+
+  function refinementErrorMessage(code: string): string {
+    return t.recipe[recipeErrorMessageKey(code, "refinement")];
   }
 
   async function generate() {
@@ -203,6 +212,7 @@ export function RecipeDialog({
     requestRef.current = controller;
     setLoading(true);
     setRefiningIndex(null);
+    setRefineError(null);
     setError(null);
     setRecipes([]);
     setViewingHistory(false);
@@ -274,6 +284,7 @@ export function RecipeDialog({
     let timedOut = false;
     requestRef.current = controller;
     setRefiningIndex(index);
+    setRefineError(null);
     setError(null);
     const timeout = window.setTimeout(() => {
       timedOut = true;
@@ -304,9 +315,12 @@ export function RecipeDialog({
     } catch (requestError) {
       if (requestSequenceRef.current !== requestSequence) return;
       if (timedOut) {
-        setError(t.recipe.timeout);
+        setRefineError({ index, message: t.recipe.refinementTimeout });
       } else if ((requestError as Error).name !== "AbortError") {
-        setError(errorMessage((requestError as Error).message));
+        setRefineError({
+          index,
+          message: refinementErrorMessage((requestError as Error).message)
+        });
       }
     } finally {
       window.clearTimeout(timeout);
@@ -320,6 +334,7 @@ export function RecipeDialog({
   function openHistory(entry: RecipeHistoryEntry) {
     cancelGeneration();
     setError(null);
+    setRefineError(null);
     setRecipes(entry.recipes);
     setActiveRequest(null);
     setActiveHistoryId(entry.id);
@@ -610,7 +625,7 @@ export function RecipeDialog({
         </p>
 
         {error ? (
-          <p className="rounded-[1rem] border border-tomato/20 bg-[#F3DDD3] p-3 text-sm font-bold leading-5 text-tomato">
+          <p role="alert" className="rounded-[1rem] border border-tomato/20 bg-[#F3DDD3] p-3 text-sm font-bold leading-5 text-tomato">
             {error}
           </p>
         ) : null}
@@ -659,8 +674,10 @@ export function RecipeDialog({
                 t={t}
                 canRefine={!viewingHistory && activeRequest !== null}
                 refining={refiningIndex === index}
+                error={refineError?.index === index ? refineError.message : undefined}
                 onRefine={(adjustment) => void refineRecipe(index, adjustment)}
                 onCancel={cancelGeneration}
+                onDismissError={() => setRefineError(null)}
               />
             ))}
           </section>

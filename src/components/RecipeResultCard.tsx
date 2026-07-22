@@ -1,11 +1,13 @@
 import {
+  CircleAlert,
   ChefHat,
   Clock3,
   LoaderCircle,
   PackageOpen,
   RefreshCw,
   Refrigerator,
-  SlidersHorizontal
+  SlidersHorizontal,
+  X
 } from "lucide-react";
 import { useState } from "react";
 import type { Messages } from "../i18n/en-GB";
@@ -26,8 +28,10 @@ interface RecipeResultCardProps {
   t: Messages;
   canRefine: boolean;
   refining: boolean;
+  error?: string;
   onRefine: (adjustment: RecipeAdjustment) => void;
   onCancel: () => void;
+  onDismissError: () => void;
 }
 
 const quickAdjustments: RecipeAdjustmentKind[] = [
@@ -45,8 +49,10 @@ export function RecipeResultCard({
   t,
   canRefine,
   refining,
+  error,
   onRefine,
-  onCancel
+  onCancel,
+  onDismissError
 }: RecipeResultCardProps): JSX.Element {
   const [removeIngredient, setRemoveIngredient] = useState("");
   const [missingPantry, setMissingPantry] = useState("");
@@ -112,6 +118,24 @@ export function RecipeResultCard({
 
       <p className="mt-3 text-sm font-bold leading-6 text-ink">{recipe.whyThisOption}</p>
       <p className="mt-1 text-sm font-medium leading-6 text-ink-muted">{recipe.summary}</p>
+
+      {error ? (
+        <div
+          role="alert"
+          className="mt-4 flex items-start gap-2 rounded-[0.9rem] border border-tomato/20 bg-[#F3DDD3] p-3 text-tomato"
+        >
+          <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+          <p className="min-w-0 flex-1 text-xs font-bold leading-5">{error}</p>
+          <button
+            type="button"
+            onClick={onDismissError}
+            aria-label={t.actions.close}
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-full hover:bg-tomato/10"
+          >
+            <X className="h-3.5 w-3.5" aria-hidden />
+          </button>
+        </div>
+      ) : null}
 
       <div className="mt-4 grid gap-2">
         <div className="rounded-[0.9rem] bg-paper-soft p-3">

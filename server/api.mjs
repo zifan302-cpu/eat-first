@@ -339,7 +339,7 @@ export function buildRecipeSystemPrompt(input, mode = "pair", adjustment = null)
     : `LANGUAGE: Write every user-visible title, summary, whyThisOption, ingredient, missing ingredient and step in ${language}. Return exactly 1 replacement option.`;
   const timeRule = pairMode
     ? "TIME LIMIT: at least one option must fit maxMinutes. At most one option may exceed it when that is the only honest way to use an important required or suggested food; for that option, begin the Chinese summary with the exact prefix '时间超出：' or the English summary with 'Over time limit:'."
-    : "TIME LIMIT: the replacement should fit maxMinutes. If the adjustment asks for a shorter option, it must not take longer than the original recipe.";
+    : "TIME LIMIT: the replacement should fit maxMinutes. If the adjustment asks for a shorter option, its totalMinutes must be strictly lower than the original recipe.";
   const foodRoleRule = pairMode
     ? "FOOD ROLES: Every requiredFoods item must be used by at least one of the two options. suggestedFoods deserve attention but are soft recommendations: across both options, cover as many as practical without forcing incompatible foods together. availableFoods are optional and should be used only when they improve a dish. Each option must use at least one supplied fridge food."
     : "FOOD ROLES: The replacement must use at least one supplied fridge food. Keep the original option's useful fridge-food focus unless the requested adjustment explicitly removes one ingredient.";
@@ -607,29 +607,184 @@ function createRecipeUserData(body, context) {
   };
 }
 
-async function requestRecipeModel(config, systemPrompt, userData, maxCompletionTokens) {
-  const upstream = await fetch(`${config.baseUrl}/chat/completions`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${config.apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: config.model,
-      enable_thinking: false,
-      response_format: { type: "json_object" },
-      temperature: 0.25,
-      max_completion_tokens: maxCompletionTokens,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: JSON.stringify(userData) }
-      ]
-    }),
-    signal: AbortSignal.timeout(45_000)
-  });
+const recipeContractErrorCodes = new Set([
+  "INVALID_MODEL_OUTPUT",
+  "REQUIRED_FOOD_MISSING",
+  "RECIPE_WITHOUT_FRIDGE_FOOD",
+  "TIME_LIMIT_MISSING",
+  "DUPLICATE_RECIPE_OPTIONS",
+  "REPLACEMENT_NOT_SHORTER",
+  "REPLACEMENT_NOT_DISTINCT",
+  "UNKNOWN_RECIPE_FOOD",
+  "REPLACEMENT_GOAL_MISSING",
+  "REPLACEMENT_IGNORED_ADJUSTMENT"
+]);
+
+export function isRecipeContractError(error) {
+  return error instanceof Error && recipeContractErrorCodes.has(error.message);
+}
+
+function normalizedFoodText(value) {
+  return removeInternalReferences(value)
+    .toLocaleLowerCase()
+    .replace(/[\s\-_/.,;:!?()[\]{}，。；：！？、（）【】]/g, "");
+}
+
+export function reconcileRecipeFoodUses(recipes, input) {
+  const foods = [...input.requiredFoods, ...input.suggestedFoods, ...input.availableFoods];
+  const nextRecipes = recipes.map((recipe) => ({
+    ...recipe,
+    usesFoods: recipe.usesFoods.map((food) => ({ ...food }))
+  }));
+  const alreadyUsed = new Set(nextRecipes.flatMap((recipe) => recipe.usesFoods.map((food) => food.foodId)));
+
+  for (const food of foods) {
+    if (alreadyUsed.has(food.id)) continue;
+    const foodName = normalizedFoodText(food.name);
+    if (foodName.length < 2) continue;
+    const matchingRecipe = nextRecipes.find((recipe) => {
+      if (recipe.usesFoods.length >= 8) return false;
+      const visibleIngredients = normalizedFoodText([recipe.title, ...recipe.ingredients].join(" "));
+      return visibleIngredients.includes(foodName);
+    });
+    if (!matchingRecipe) continue;
+    matchingRecipe.usesFoods.push({ foodId: food.id });
+    alreadyUsed.add(food.id);
+  }
+
+  return nextRecipes;
+}
+
+async function requestRecipeModel(
+  config,
+  systemPrompt,
+  userData,
+  maxCompletionTokens,
+  { temperature = 0.25, timeoutMs = 24_000 } = {}
+) {
+  let upstream;
+  try {
+    upstream = await fetch(`${config.baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${config.apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: config.model,
+        enable_thinking: false,
+        response_format: { type: "json_object" },
+        temperature,
+        max_completion_tokens: maxCompletionTokens,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: JSON.stringify(userData) }
+        ]
+      }),
+      signal: AbortSignal.timeout(timeoutMs)
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "TimeoutError") throw error;
+    console.error("Qwen request failed before receiving a response");
+    throw new Error("QWEN_REQUEST_FAILED");
+  }
   if (!upstream.ok) {
     console.error(`Qwen request failed with status ${upstream.status}`);
     throw new Error("QWEN_REQUEST_FAILED");
   }
-  const data = await upstream.json();
-  return contentToText(data?.choices?.[0]?.message?.content);
+  let data;
+  try {
+    data = await upstream.json();
+  } catch {
+    console.error("Qwen returned a non-JSON API response");
+    throw new Error("QWEN_REQUEST_FAILED");
+  }
+  const text = contentToText(data?.choices?.[0]?.message?.content);
+  if (!text.trim()) throw new Error("INVALID_MODEL_OUTPUT");
+  return text;
+}
+
+function parseAndValidateRecipeText({
+  text,
+  body,
+  context,
+  mode,
+  adjustment,
+  originalRecipe,
+  otherRecipes
+}) {
+  const expectedCount = mode === "single" ? 1 : 2;
+  const parsed = parseRecipeJson(
+    text,
+    context.aliases,
+    expectedCount,
+    [...body.equipment, ...body.customEquipment]
+  );
+  const recipes = reconcileRecipeFoodUses(parsed, body);
+  if (mode === "single") {
+    return [validateRecipeReplacement(
+      recipes[0],
+      body,
+      originalRecipe,
+      adjustment,
+      otherRecipes
+    )];
+  }
+  return validateRecipeOutput(recipes, body);
+}
+
+async function requestValidatedRecipes({
+  config,
+  body,
+  context,
+  mode = "pair",
+  adjustment = null,
+  originalRecipe = null,
+  otherRecipes = [],
+  userData,
+  maxCompletionTokens
+}) {
+  const systemPrompt = buildRecipeSystemPrompt(body, mode, adjustment);
+  const validateText = (text) => parseAndValidateRecipeText({
+    text,
+    body,
+    context,
+    mode,
+    adjustment,
+    originalRecipe,
+    otherRecipes
+  });
+  const firstText = await requestRecipeModel(
+    config,
+    systemPrompt,
+    userData,
+    maxCompletionTokens
+  );
+
+  try {
+    return validateText(firstText);
+  } catch (error) {
+    if (!isRecipeContractError(error)) throw error;
+    const failureCode = error.message;
+    console.warn(`Recipe output needs one repair attempt: ${failureCode}`);
+    const repairText = await requestRecipeModel(
+      config,
+      `${systemPrompt}\nREPAIR: The previous JSON failed validation with ${failureCode}. Return a complete corrected response, not a patch. Preserve all user constraints and ensure every structured field agrees with the visible recipe text.`,
+      {
+        ...userData,
+        repair: {
+          failureCode,
+          previousResponse: firstText.slice(0, 12_000)
+        }
+      },
+      maxCompletionTokens,
+      { temperature: 0.1, timeoutMs: 18_000 }
+    );
+    try {
+      return validateText(repairText);
+    } catch (repairError) {
+      if (!isRecipeContractError(repairError)) throw repairError;
+      console.error(`Recipe repair failed validation: ${repairError.message}`);
+      throw new Error("RECIPE_CONSTRAINT_MISMATCH");
+    }
+  }
 }
 
 function recipeModelConfig() {
@@ -640,12 +795,28 @@ function recipeModelConfig() {
 }
 
 function sendRecipeFailure(response, error) {
-  const code = error instanceof Error && error.message === "PAYLOAD_TOO_LARGE"
-    ? "PAYLOAD_TOO_LARGE"
-    : error instanceof Error && error.name === "TimeoutError"
-      ? "RECIPE_TIMEOUT"
-      : "RECIPE_GENERATION_FAILED";
-  sendJson(response, code === "PAYLOAD_TOO_LARGE" ? 413 : code === "RECIPE_TIMEOUT" ? 504 : 502, { code });
+  const message = error instanceof Error ? error.message : "";
+  if (message === "PAYLOAD_TOO_LARGE") {
+    sendJson(response, 413, { code: "PAYLOAD_TOO_LARGE" });
+    return;
+  }
+  if (message === "INVALID_JSON") {
+    sendJson(response, 400, { code: "INVALID_RECIPE_REQUEST" });
+    return;
+  }
+  if (error instanceof Error && error.name === "TimeoutError") {
+    sendJson(response, 504, { code: "RECIPE_TIMEOUT" });
+    return;
+  }
+  if (message === "QWEN_REQUEST_FAILED") {
+    sendJson(response, 502, { code: "AI_UPSTREAM_FAILED" });
+    return;
+  }
+  if (message === "RECIPE_CONSTRAINT_MISMATCH" || isRecipeContractError(error)) {
+    sendJson(response, 422, { code: "RECIPE_CONSTRAINT_MISMATCH" });
+    return;
+  }
+  sendJson(response, 500, { code: "RECIPE_SERVER_ERROR" });
 }
 
 async function handleRecipes(request, response, url) {
@@ -683,26 +854,23 @@ async function handleRecipes(request, response, url) {
           foodId: context.idToAlias.get(food.foodId)
         })).filter((food) => food.foodId)
       };
-      const text = await requestRecipeModel(
+      const [replacement] = await requestValidatedRecipes({
         config,
-        buildRecipeSystemPrompt(body, "single", adjustment),
-        {
+        body,
+        context,
+        mode: "single",
+        adjustment,
+        originalRecipe: recipe,
+        otherRecipes,
+        userData: {
           task: "Replace only this recipe option according to the adjustment",
           ...createRecipeUserData(body, context),
           originalRecipe: modelRecipe,
           adjustment
         },
-        900
-      );
-      const [replacement] = parseRecipeJson(
-        text,
-        context.aliases,
-        1,
-        [...body.equipment, ...body.customEquipment]
-      );
-      sendJson(response, 200, {
-        recipe: validateRecipeReplacement(replacement, body, recipe, adjustment, otherRecipes)
+        maxCompletionTokens: 900
       });
+      sendJson(response, 200, { recipe: replacement });
       return true;
     }
 
@@ -712,19 +880,14 @@ async function handleRecipes(request, response, url) {
       return true;
     }
     const context = createRecipeModelContext(body);
-    const text = await requestRecipeModel(
+    const recipes = await requestValidatedRecipes({
       config,
-      buildRecipeSystemPrompt(body),
-      { task: "Create recipe options from this data", ...createRecipeUserData(body, context) },
-      1800
-    );
-    const recipes = parseRecipeJson(
-      text,
-      context.aliases,
-      2,
-      [...body.equipment, ...body.customEquipment]
-    );
-    sendJson(response, 200, { recipes: validateRecipeOutput(recipes, body) });
+      body,
+      context,
+      userData: { task: "Create recipe options from this data", ...createRecipeUserData(body, context) },
+      maxCompletionTokens: 1800
+    });
+    sendJson(response, 200, { recipes });
   } catch (error) {
     console.error(
       `Recipe generation failed: ${error instanceof Error ? error.message.slice(0, 160) : "unknown error"}`

@@ -5,6 +5,7 @@ import {
   createModelFoodAliases,
   normalizeCustomLabels,
   parseRecipeJson,
+  reconcileRecipeFoodUses,
   validateRecipeOutput,
   validateRecipeReplacement
 } from "./api.mjs";
@@ -130,6 +131,20 @@ describe("recipe model boundary", () => {
       requiredFoods: [],
       maxMinutes: 15
     })).toThrow("TIME_LIMIT_MISSING");
+  });
+
+  it("reconciles a food reference when the visible ingredient clearly contains its name", () => {
+    const recipes = reconcileRecipeFoodUses([{
+      title: "Tomato rice",
+      ingredients: ["Tomato 2", "Rice 1 bowl"],
+      usesFoods: []
+    }], {
+      requiredFoods: [{ id: "tomato", name: "Tomato" }],
+      suggestedFoods: [],
+      availableFoods: []
+    });
+
+    expect(recipes[0].usesFoods).toEqual([{ foodId: "tomato" }]);
   });
 
   it("rejects a replacement that is not shorter when requested", () => {
