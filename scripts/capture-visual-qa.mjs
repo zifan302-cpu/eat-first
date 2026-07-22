@@ -1,9 +1,10 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
-const pages = await fetch("http://127.0.0.1:9223/json").then((response) => response.json());
+const cdpPort = process.env.EAT_FIRST_CDP_PORT ?? "9223";
+const pages = await fetch(`http://127.0.0.1:${cdpPort}/json`).then((response) => response.json());
 const page = pages.find((entry) => entry.type === "page" && entry.url.startsWith("http://127.0.0.1:4173"));
-if (!page) throw new Error("Local preview page not found on CDP port 9223");
+if (!page) throw new Error(`Local preview page not found on CDP port ${cdpPort}`);
 
 const socket = new WebSocket(page.webSocketDebuggerUrl);
 let nextId = 0;
@@ -66,9 +67,21 @@ const makeFood = (id, name, category, dateLabelType, labelDate, quantityAmount, 
 });
 
 const sampleState = {
-  schemaVersion: "1.2.0",
+  schemaVersion: "1.3.0",
   appId: "eat-first",
-  preferences: { locale: "zh-CN", topN: 3, showSafetyBanner: true, hasSeenOnboarding: true },
+  preferences: {
+    locale: "zh-CN",
+    topN: 3,
+    showSafetyBanner: true,
+    hasSeenOnboarding: true,
+    recipe: {
+      cuisine: "auto",
+      defaultServings: 1,
+      defaultMaxMinutes: 30,
+      dietaryNotes: "少辣",
+      appliances: { oven: false, microwave: false, air_fryer: false, rice_cooker: true }
+    }
+  },
   foods: [
     makeFood("tomato", "番茄", "vegetable", "use_by", date(0), 4),
     makeFood("mushroom", "蘑菇", "vegetable", "use_by", date(1), 250, "g"),
@@ -107,7 +120,7 @@ async function capture(name) {
   });
   const outputDir = resolve("output/playwright");
   await mkdir(outputDir, { recursive: true });
-  const output = join(outputDir, `eat-first-v06-${name}.png`);
+  const output = join(outputDir, `eat-first-v07-${name}.png`);
   await writeFile(output, Buffer.from(result.data, "base64"));
   console.log(output);
 }
@@ -130,6 +143,12 @@ for (const [name, hash] of [
   await evaluate(`location.hash = ${JSON.stringify(hash)}`);
   await delay(750);
   await capture(name);
+  if (name === "home-430x900") {
+    await evaluate("Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.includes('\u751f\u6210\u83dc\u8c31\u7075\u611f'))?.click()");
+    await delay(350);
+    await capture("recipe-setup-430x900");
+    await evaluate("Array.from(document.querySelectorAll('button')).find((button) => button.getAttribute('aria-label')?.includes('\u5173\u95ed'))?.click()");
+  }
   if (name === "fridge-430x900") {
     await evaluate("document.querySelector('section.space-y-2 article button')?.click()");
     await delay(350);
@@ -139,5 +158,23 @@ for (const [name, hash] of [
     await capture("fridge-partial-430x900");
   }
 }
+
+await evaluate("location.hash = '#/add'");
+await delay(500);
+await evaluate("document.querySelector('.fresh-card form input.fresh-field')?.focus()");
+await send("Input.insertText", { text: "\u8349\u7a3f\u6062\u590d\u756a\u8304" });
+await delay(500);
+const storedDraft = await evaluate("sessionStorage.getItem('eat-first:add-food-draft')");
+if (!storedDraft.result.value?.includes("\u8349\u7a3f\u6062\u590d\u756a\u8304")) {
+  throw new Error(`Draft was not persisted: ${JSON.stringify(storedDraft.result.value)}`);
+}
+await reload();
+const draftResult = await evaluate("document.querySelector('.fresh-card form input.fresh-field')?.value");
+const recoveredDraft = draftResult.result.value;
+if (recoveredDraft !== "\u8349\u7a3f\u6062\u590d\u756a\u8304") {
+  throw new Error(`Draft recovery failed: ${JSON.stringify(recoveredDraft)}`);
+}
+await capture("add-draft-recovered-430x900");
+console.log(JSON.stringify({ draftRecovery: "passed", recoveredDraft }));
 
 socket.close();

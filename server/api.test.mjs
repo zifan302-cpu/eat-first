@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { categoryFromTags, createModelFoodAliases, parseRecipeJson } from "./api.mjs";
+import {
+  buildRecipeSystemPrompt,
+  categoryFromTags,
+  createModelFoodAliases,
+  parseRecipeJson
+} from "./api.mjs";
 
 describe("barcode category confidence", () => {
   it("does not treat a generic plant-based tag as a vegetable", () => {
@@ -18,6 +23,26 @@ describe("barcode category confidence", () => {
 });
 
 describe("recipe model boundary", () => {
+  it("separates response language from cuisine and equipment preferences", () => {
+    const chinesePrompt = buildRecipeSystemPrompt({
+      locale: "zh-CN",
+      cuisine: "auto",
+      appliances: ["rice_cooker"]
+    });
+    expect(chinesePrompt).toContain("Simplified Chinese");
+    expect(chinesePrompt).toContain("Chinese home cooking");
+    expect(chinesePrompt).toContain("rice cooker");
+
+    const englishPrompt = buildRecipeSystemPrompt({
+      locale: "en-GB",
+      cuisine: "global_everyday",
+      appliances: []
+    });
+    expect(englishPrompt).toContain("British English");
+    expect(englishPrompt).toContain("global everyday home cooking");
+    expect(englishPrompt).toContain("Do not require an oven");
+  });
+
   it("uses short aliases and removes internal ids from visible recipe text", () => {
     const beefId = "food-92327301-1fff-4a4f-969d-b60331fc8793";
     const tomatoId = "food-7bf4e777-bb41-467d-81be-17133a76ebb0";

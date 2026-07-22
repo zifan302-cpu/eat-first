@@ -105,6 +105,7 @@ export function AddItemPage(): JSX.Element {
           t={t}
           submitLabel={t.actions.save}
           continueLabel={t.actions.saveAndAdd}
+          draftStorageKey="eat-first:add-food-draft"
           recentSuggestions={recentSuggestions}
           onSubmit={(input, intent) => {
             actions.addFood(input);

@@ -52,9 +52,21 @@ describe("storage", () => {
 
     const migrated = migrateState(oldState);
 
-    expect(migrated.schemaVersion).toBe("1.2.0");
+    expect(migrated.schemaVersion).toBe("1.3.0");
     expect(migrated.foods).toHaveLength(1);
     expect(migrated.foods[0].source).toBe("import");
+    expect(migrated.preferences.recipe).toEqual({
+      cuisine: "auto",
+      defaultServings: 1,
+      defaultMaxMinutes: 30,
+      dietaryNotes: "",
+      appliances: {
+        oven: false,
+        microwave: false,
+        air_fryer: false,
+        rice_cooker: false
+      }
+    });
   });
 
   it("derives structured quantity from an older text amount", () => {

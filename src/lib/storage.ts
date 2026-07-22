@@ -1,4 +1,10 @@
-import type { AppStateEnvelope, FoodItem, LocaleCode } from "../types/food";
+import type {
+  AppStateEnvelope,
+  FoodItem,
+  LocaleCode,
+  RecipeCuisinePreference,
+  UserPreferences
+} from "../types/food";
 import { APP_ID, SCHEMA_VERSION, STORAGE_KEY } from "./constants";
 import { isoNow } from "./dates";
 import { parseQuantityText } from "./quantity";
@@ -19,10 +25,56 @@ export function isImportableState(input: unknown): boolean {
     isObject(input) &&
     input.appId === APP_ID &&
     (input.schemaVersion === SCHEMA_VERSION ||
+      input.schemaVersion === "1.2.0" ||
       input.schemaVersion === "1.1.0" ||
       input.schemaVersion === "1.0.0") &&
     Array.isArray(input.foods)
   );
+}
+
+const recipeServings = [1, 2, 3, 4] as const;
+const recipeMinutes = [15, 30, 45, 60] as const;
+const cuisinePreferences: RecipeCuisinePreference[] = ["auto", "chinese_home", "global_everyday"];
+
+function defaultRecipePreferences(): UserPreferences["recipe"] {
+  return {
+    cuisine: "auto",
+    defaultServings: 1,
+    defaultMaxMinutes: 30,
+    dietaryNotes: "",
+    appliances: {
+      oven: false,
+      microwave: false,
+      air_fryer: false,
+      rice_cooker: false
+    }
+  };
+}
+
+function normalizeRecipePreferences(input: unknown): UserPreferences["recipe"] {
+  const defaults = defaultRecipePreferences();
+  if (!isObject(input)) return defaults;
+  const appliances = isObject(input.appliances) ? input.appliances : {};
+
+  return {
+    cuisine: cuisinePreferences.includes(input.cuisine as RecipeCuisinePreference)
+      ? (input.cuisine as RecipeCuisinePreference)
+      : defaults.cuisine,
+    defaultServings: recipeServings.includes(input.defaultServings as 1 | 2 | 3 | 4)
+      ? (input.defaultServings as 1 | 2 | 3 | 4)
+      : defaults.defaultServings,
+    defaultMaxMinutes: recipeMinutes.includes(input.defaultMaxMinutes as 15 | 30 | 45 | 60)
+      ? (input.defaultMaxMinutes as 15 | 30 | 45 | 60)
+      : defaults.defaultMaxMinutes,
+    dietaryNotes:
+      typeof input.dietaryNotes === "string" ? input.dietaryNotes.trim().slice(0, 240) : "",
+    appliances: {
+      oven: appliances.oven === true,
+      microwave: appliances.microwave === true,
+      air_fryer: appliances.air_fryer === true,
+      rice_cooker: appliances.rice_cooker === true
+    }
+  };
 }
 
 function normalizeFoods(input: unknown): FoodItem[] {
@@ -78,7 +130,8 @@ export function createDefaultState(now = new Date()): AppStateEnvelope {
       locale: detectLocale(),
       topN: 3,
       showSafetyBanner: true,
-      hasSeenOnboarding: false
+      hasSeenOnboarding: false,
+      recipe: defaultRecipePreferences()
     },
     foods: [],
     meta: {
@@ -108,7 +161,8 @@ export function migrateState(input: unknown): AppStateEnvelope {
       locale: preferences.locale === "zh-CN" || preferences.locale === "en-GB" ? preferences.locale : base.preferences.locale,
       topN: typeof preferences.topN === "number" ? preferences.topN : 3,
       showSafetyBanner: preferences.showSafetyBanner !== false,
-      hasSeenOnboarding: preferences.hasSeenOnboarding === true
+      hasSeenOnboarding: preferences.hasSeenOnboarding === true,
+      recipe: normalizeRecipePreferences(preferences.recipe)
     },
     foods,
     meta: {

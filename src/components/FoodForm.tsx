@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { DateLabelType, FoodCategory, FoodQuantityUnit, LocaleCode } from "../types/food";
 import type { Messages } from "../i18n/en-GB";
 import type { AddFoodInput } from "../hooks/useFoodActions";
@@ -27,11 +27,22 @@ interface FoodFormProps {
   submitLabel: string;
   continueLabel?: string;
   recentSuggestions?: RecentFoodSuggestion[];
+  draftStorageKey?: string;
   onSubmit(input: AddFoodInput, intent: SubmitIntent): boolean | void;
   onCancel?: () => void;
 }
 
 const shelfLifeOptions = [1, 2, 3, 5, 7] as const;
+
+function loadDraft(key?: string): Partial<AddFoodInput> | undefined {
+  if (!key) return undefined;
+  try {
+    const parsed = JSON.parse(sessionStorage.getItem(key) || "null") as unknown;
+    return parsed && typeof parsed === "object" ? (parsed as Partial<AddFoodInput>) : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 export function FoodForm({
   initial,
@@ -40,31 +51,80 @@ export function FoodForm({
   submitLabel,
   continueLabel,
   recentSuggestions = [],
+  draftStorageKey,
   onSubmit,
   onCancel
 }: FoodFormProps): JSX.Element {
-  const parsedInitialQuantity = parseQuantityText(initial?.quantityText);
-  const [name, setName] = useState(initial?.name ?? "");
-  const [category, setCategory] = useState<FoodCategory>(initial?.category ?? "other");
-  const [categoryTouched, setCategoryTouched] = useState(Boolean(initial?.category));
-  const [dateLabelType, setDateLabelType] = useState<DateLabelType>(
-    initial?.dateLabelType ?? "use_by"
+  const formInitial = useMemo(
+    () => initial ?? loadDraft(draftStorageKey),
+    [draftStorageKey, initial]
   );
-  const [labelDate, setLabelDate] = useState(initial?.labelDate ?? todayInputValue());
+  const parsedInitialQuantity = parseQuantityText(formInitial?.quantityText);
+  const [name, setName] = useState(formInitial?.name ?? "");
+  const [category, setCategory] = useState<FoodCategory>(formInitial?.category ?? "other");
+  const [categoryTouched, setCategoryTouched] = useState(Boolean(formInitial?.category));
+  const [dateLabelType, setDateLabelType] = useState<DateLabelType>(
+    formInitial?.dateLabelType ?? "use_by"
+  );
+  const [labelDate, setLabelDate] = useState(formInitial?.labelDate ?? todayInputValue());
   const [openedShelfLifeDays, setOpenedShelfLifeDays] = useState(
-    initial?.openedShelfLifeDays ?? 2
+    formInitial?.openedShelfLifeDays ?? 2
   );
   const [quantityAmount, setQuantityAmount] = useState(
-    initial?.quantityAmount?.toString() ?? parsedInitialQuantity.amount?.toString() ?? ""
+    formInitial?.quantityAmount?.toString() ?? parsedInitialQuantity.amount?.toString() ?? ""
   );
   const [quantityUnit, setQuantityUnit] = useState<FoodQuantityUnit>(
-    initial?.quantityUnit ?? parsedInitialQuantity.unit ?? "item"
+    formInitial?.quantityUnit ?? parsedInitialQuantity.unit ?? "item"
   );
   const [quantityText, setQuantityText] = useState(
-    parsedInitialQuantity.amount ? "" : initial?.quantityText ?? ""
+    parsedInitialQuantity.amount ? "" : formInitial?.quantityText ?? ""
   );
-  const [note, setNote] = useState(initial?.note ?? "");
+  const [note, setNote] = useState(formInitial?.note ?? "");
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!draftStorageKey) return;
+    const draft: Partial<AddFoodInput> = {
+      name,
+      category,
+      dateLabelType,
+      labelDate,
+      openedShelfLifeDays,
+      quantityAmount: quantityAmount ? Number(quantityAmount) : undefined,
+      quantityUnit,
+      quantityText,
+      note,
+      barcode: formInitial?.barcode,
+      source: formInitial?.source
+    };
+    try {
+      sessionStorage.setItem(draftStorageKey, JSON.stringify(draft));
+    } catch {
+      // Draft recovery is best-effort when browser storage is unavailable.
+    }
+  }, [
+    formInitial?.barcode,
+    category,
+    dateLabelType,
+    draftStorageKey,
+    formInitial?.source,
+    labelDate,
+    name,
+    note,
+    openedShelfLifeDays,
+    quantityAmount,
+    quantityText,
+    quantityUnit
+  ]);
+
+  function clearDraft() {
+    if (!draftStorageKey) return;
+    try {
+      sessionStorage.removeItem(draftStorageKey);
+    } catch {
+      // The form remains usable even when browser storage is unavailable.
+    }
+  }
 
   function updateName(nextName: string) {
     setName(nextName);
@@ -96,9 +156,9 @@ export function FoodForm({
       quantityAmount: quantityAmount ? Number(quantityAmount) : undefined,
       quantityUnit: quantityAmount ? quantityUnit : undefined,
       quantityText,
-      barcode: initial?.barcode,
+      barcode: formInitial?.barcode,
       note,
-      source: initial?.source
+      source: formInitial?.source
     };
   }
 
@@ -109,6 +169,7 @@ export function FoodForm({
     }
 
     const result = onSubmit(input, intent);
+    if (result !== false) clearDraft();
     if (intent === "continue" && result !== false) {
       setName("");
       setQuantityText("");
@@ -137,9 +198,9 @@ export function FoodForm({
         />
       </label>
 
-      {initial?.barcode ? (
+      {formInitial?.barcode ? (
         <p className="rounded-[0.9rem] border border-paper-line bg-paper px-3 py-2 text-xs font-bold text-ink-muted">
-          {t.barcode.codeLabel}: <span className="font-mono text-ink">{initial.barcode}</span>
+          {t.barcode.codeLabel}: <span className="font-mono text-ink">{formInitial.barcode}</span>
         </p>
       ) : null}
 
@@ -292,7 +353,10 @@ export function FoodForm({
         {onCancel ? (
           <button
             type="button"
-            onClick={onCancel}
+            onClick={() => {
+              clearDraft();
+              onCancel();
+            }}
             className="fresh-button-secondary"
           >
             {t.actions.cancel}

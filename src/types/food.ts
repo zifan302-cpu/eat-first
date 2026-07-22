@@ -1,5 +1,9 @@
 export type LocaleCode = "zh-CN" | "en-GB";
 
+export type RecipeCuisinePreference = "auto" | "chinese_home" | "global_everyday";
+
+export type CookingAppliance = "oven" | "microwave" | "air_fryer" | "rice_cooker";
+
 export type DateLabelType = "use_by" | "best_before" | "opened" | "none";
 
 export type FoodStatus = "active" | "eaten" | "frozen" | "discarded";
@@ -78,6 +82,13 @@ export interface UserPreferences {
   topN: number;
   showSafetyBanner: boolean;
   hasSeenOnboarding: boolean;
+  recipe: {
+    cuisine: RecipeCuisinePreference;
+    defaultServings: 1 | 2 | 3 | 4;
+    defaultMaxMinutes: 15 | 30 | 45 | 60;
+    dietaryNotes: string;
+    appliances: Record<CookingAppliance, boolean>;
+  };
 }
 
 export interface AppMeta {
@@ -86,7 +97,7 @@ export interface AppMeta {
 }
 
 export interface AppStateEnvelope {
-  schemaVersion: "1.2.0";
+  schemaVersion: "1.3.0";
   appId: "eat-first";
   preferences: UserPreferences;
   foods: FoodItem[];

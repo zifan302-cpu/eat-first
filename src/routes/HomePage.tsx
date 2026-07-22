@@ -12,6 +12,7 @@ import { useLocale } from "../hooks/useLocale";
 import { CHARACTERS } from "../lib/characters";
 import { getGameProgress } from "../lib/game";
 import { getTopFoods } from "../lib/priority";
+import { isRecipeEligible } from "../lib/recipes";
 
 export function HomePage(): JSX.Element {
   const { state, setState } = useAppState();
@@ -19,6 +20,9 @@ export function HomePage(): JSX.Element {
   const { locale, t } = useLocale();
   const [recipeOpen, setRecipeOpen] = useState(false);
   const topFoods = getTopFoods(state.foods, state.preferences.topN);
+  const recipeCandidates = getTopFoods(state.foods, state.foods.length);
+  const recipeFoods = recipeCandidates.filter(isRecipeEligible).slice(0, 8);
+  const recipePriorityFoods = recipeFoods.slice(0, 3);
   const game = getGameProgress(state.foods);
   const captain = CHARACTERS.tomato;
   const scout = CHARACTERS.broccoli;
@@ -161,8 +165,10 @@ export function HomePage(): JSX.Element {
 
       <RecipeDialog
         open={recipeOpen}
-        foods={topFoods}
+        priorityFoods={recipePriorityFoods}
+        foods={recipeCandidates}
         locale={locale}
+        preferences={state.preferences.recipe}
         t={t}
         onClose={() => setRecipeOpen(false)}
       />
