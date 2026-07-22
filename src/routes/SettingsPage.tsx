@@ -9,15 +9,16 @@ import {
   Upload
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { CustomTagEditor } from "../components/CustomTagEditor";
 import { PageHeader } from "../components/PageHeader";
 import { SafetyBanner } from "../components/SafetyBanner";
 import { SettingsDisclosure } from "../components/SettingsDisclosure";
 import { useAppState } from "../hooks/useAppState";
 import { useLocale } from "../hooks/useLocale";
-import { COOKING_APPLIANCES } from "../lib/constants";
+import { COOKING_EQUIPMENT, COOKING_EQUIPMENT_GROUPS, PANTRY_STAPLES } from "../lib/constants";
 import { clearState, createDefaultState, isImportableState, migrateState } from "../lib/storage";
 import { cx } from "../lib/ui";
-import type { CookingAppliance, LocaleCode, UserPreferences } from "../types/food";
+import type { CookingEquipment, LocaleCode, PantryStaple, UserPreferences } from "../types/food";
 
 const servingsOptions = [1, 2, 3, 4] as const;
 const timeOptions = [15, 30, 45, 60] as const;
@@ -55,11 +56,20 @@ export function SettingsPage(): JSX.Element {
     }));
   }
 
-  function updateAppliance(appliance: CookingAppliance, enabled: boolean) {
+  function updateEquipment(item: CookingEquipment, enabled: boolean) {
     updateRecipePreferences({
-      appliances: {
-        ...state.preferences.recipe.appliances,
-        [appliance]: enabled
+      equipment: {
+        ...state.preferences.recipe.equipment,
+        [item]: enabled
+      }
+    });
+  }
+
+  function updatePantryStaple(item: PantryStaple, enabled: boolean) {
+    updateRecipePreferences({
+      pantryStaples: {
+        ...state.preferences.recipe.pantryStaples,
+        [item]: enabled
       }
     });
   }
@@ -89,12 +99,12 @@ export function SettingsPage(): JSX.Element {
     }
   }
 
-  const applianceLabels: Record<CookingAppliance, string> = {
-    oven: t.settings.applianceOven,
-    microwave: t.settings.applianceMicrowave,
-    air_fryer: t.settings.applianceAirFryer,
-    rice_cooker: t.settings.applianceRiceCooker
-  };
+  const selectedEquipmentCount = COOKING_EQUIPMENT.filter(
+    (item) => state.preferences.recipe.equipment[item]
+  ).length + state.preferences.recipe.customEquipment.length;
+  const selectedPantryCount = PANTRY_STAPLES.filter(
+    (item) => state.preferences.recipe.pantryStaples[item]
+  ).length + state.preferences.recipe.customPantryStaples.length;
 
   return (
     <div className="space-y-4">
@@ -196,25 +206,115 @@ export function SettingsPage(): JSX.Element {
             />
           </label>
 
-          <fieldset>
-            <legend className="mb-2 text-sm font-black text-ink">{t.settings.appliances}</legend>
-            <div className="grid grid-cols-2 gap-2">
-              {COOKING_APPLIANCES.map((appliance) => (
-                <label
-                  key={appliance}
-                  className="flex min-h-11 items-center gap-2 rounded-[0.9rem] border border-paper-line bg-paper px-3 text-sm font-bold text-ink"
-                >
-                  <input
-                    type="checkbox"
-                    checked={state.preferences.recipe.appliances[appliance]}
-                    onChange={(event) => updateAppliance(appliance, event.target.checked)}
-                    className="h-4 w-4 accent-leaf-700"
-                  />
-                  {applianceLabels[appliance]}
-                </label>
+          <details className="rounded-[1rem] border border-paper-line bg-paper">
+            <summary className="cursor-pointer list-none px-4 py-3 marker:hidden">
+              <span className="flex items-center justify-between gap-3">
+                <span>
+                  <span className="block text-sm font-black text-ink">{t.settings.equipment}</span>
+                  <span className="block text-xs font-medium text-ink-muted">
+                    {t.settings.selectedCount.replace("{count}", String(selectedEquipmentCount))}
+                  </span>
+                </span>
+                <span className="text-xs font-black text-leaf-700">{t.settings.manage}</span>
+              </span>
+            </summary>
+            <div className="space-y-4 border-t border-paper-line p-3">
+              {(Object.entries(COOKING_EQUIPMENT_GROUPS) as Array<[
+                keyof typeof COOKING_EQUIPMENT_GROUPS,
+                CookingEquipment[]
+              ]>).map(([group, items]) => (
+                <fieldset key={group}>
+                  <legend className="mb-2 text-xs font-black uppercase tracking-wide text-ink-muted">
+                    {t.settings.equipmentGroups[group]}
+                  </legend>
+                  <div className="grid grid-cols-2 gap-2">
+                    {items.map((item) => (
+                      <label
+                        key={item}
+                        className="flex min-h-11 items-center gap-2 rounded-[0.9rem] border border-paper-line bg-paper-soft px-3 text-sm font-bold text-ink"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={state.preferences.recipe.equipment[item]}
+                          onChange={(event) => updateEquipment(item, event.target.checked)}
+                          className="h-4 w-4 accent-leaf-700"
+                        />
+                        {t.settings.equipmentLabels[item]}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
               ))}
+              <CustomTagEditor
+                items={state.preferences.recipe.customEquipment}
+                maxItems={8}
+                label={t.settings.customEquipment}
+                hint={t.settings.customEquipmentHint}
+                placeholder={t.settings.customEquipmentPlaceholder}
+                addLabel={t.settings.addCustom}
+                duplicateMessage={t.settings.customDuplicate}
+                limitMessage={t.settings.customEquipmentLimit}
+                removeLabel={t.settings.removeCustom}
+                onChange={(customEquipment) => updateRecipePreferences({ customEquipment })}
+              />
             </div>
-          </fieldset>
+          </details>
+
+          <div className="space-y-3 rounded-[1rem] border border-paper-line bg-paper p-3">
+            <label className="block">
+              <span className="mb-2 block text-sm font-black text-ink">{t.settings.pantryPolicy}</span>
+              <select
+                value={state.preferences.recipe.pantryPolicy}
+                onChange={(event) =>
+                  updateRecipePreferences({
+                    pantryPolicy: event.target.value as UserPreferences["recipe"]["pantryPolicy"]
+                  })
+                }
+                className="fresh-field"
+              >
+                <option value="strict">{t.settings.pantryPolicies.strict}</option>
+                <option value="everyday">{t.settings.pantryPolicies.everyday}</option>
+                <option value="flexible">{t.settings.pantryPolicies.flexible}</option>
+              </select>
+            </label>
+
+            <details>
+              <summary className="cursor-pointer text-sm font-black text-leaf-700">
+                {t.settings.pantryStaples} · {t.settings.selectedCount.replace("{count}", String(selectedPantryCount))}
+              </summary>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {PANTRY_STAPLES.map((item) => (
+                  <label
+                    key={item}
+                    className="flex min-h-10 items-center gap-2 rounded-[0.8rem] bg-paper-soft px-3 text-xs font-bold text-ink"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={state.preferences.recipe.pantryStaples[item]}
+                      onChange={(event) => updatePantryStaple(item, event.target.checked)}
+                      className="h-4 w-4 accent-leaf-700"
+                    />
+                    {t.settings.pantryLabels[item]}
+                  </label>
+                ))}
+              </div>
+            </details>
+
+            <CustomTagEditor
+              items={state.preferences.recipe.customPantryStaples}
+              maxItems={12}
+              label={t.settings.customPantry}
+              hint={t.settings.customPantryHint}
+              placeholder={t.settings.customPantryPlaceholder}
+              addLabel={t.settings.addCustom}
+              duplicateMessage={t.settings.customDuplicate}
+              limitMessage={t.settings.customPantryLimit}
+              removeLabel={t.settings.removeCustom}
+              onChange={(customPantryStaples) =>
+                updateRecipePreferences({ customPantryStaples })
+              }
+            />
+          </div>
         </div>
       </SettingsDisclosure>
 

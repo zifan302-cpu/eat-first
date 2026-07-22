@@ -3,10 +3,13 @@ const apiUrl = process.env.EAT_FIRST_API_URL ?? "http://127.0.0.1:3501/api/recip
 const shared = {
   servings: 2,
   maxMinutes: 30,
+  cookingGoal: "auto",
   dietaryNotes: "",
-  priorityFoods: [
-    { id: "tomato", name: "tomato", quantityText: "2", dateLabelType: "use_by", urgency: "today" },
-    { id: "eggs", name: "eggs", quantityText: "4", dateLabelType: "use_by", urgency: "soon" }
+  requiredFoods: [
+    { id: "tomato", name: "tomato", quantityText: "2", dateLabelType: "use_by", urgency: "use_today" }
+  ],
+  suggestedFoods: [
+    { id: "eggs", name: "eggs", quantityText: "4", dateLabelType: "use_by", urgency: "use_soon" }
   ],
   availableFoods: [
     { id: "spinach", name: "spinach", quantityText: "150 g", dateLabelType: "use_by", urgency: "soon" },
@@ -33,10 +36,19 @@ const [chinese, english] = await Promise.all([
     ...shared,
     locale: "zh-CN",
     cuisine: "auto",
-    appliances: ["rice_cooker"],
-    priorityFoods: shared.priorityFoods.map((food) => ({
+    cookingGoal: "rescue_more",
+    equipment: ["hob", "rice_cooker", "steamer"],
+    customEquipment: ["tagine"],
+    pantryPolicy: "strict",
+    pantryStaples: ["cooking_oil", "salt", "soy_sauce"],
+    customPantryStaples: ["miso paste"],
+    requiredFoods: shared.requiredFoods.map((food) => ({
       ...food,
-      name: food.id === "tomato" ? "番茄" : "鸡蛋"
+      name: "番茄"
+    })),
+    suggestedFoods: shared.suggestedFoods.map((food) => ({
+      ...food,
+      name: "鸡蛋"
     })),
     availableFoods: shared.availableFoods.map((food) => ({
       ...food,
@@ -47,7 +59,12 @@ const [chinese, english] = await Promise.all([
     ...shared,
     locale: "en-GB",
     cuisine: "global_everyday",
-    appliances: ["oven"]
+    cookingGoal: "one_pan",
+    equipment: ["hob", "oven"],
+    customEquipment: [],
+    pantryPolicy: "everyday",
+    pantryStaples: ["cooking_oil", "salt", "black_pepper"],
+    customPantryStaples: ["smoked paprika"]
   })
 ]);
 

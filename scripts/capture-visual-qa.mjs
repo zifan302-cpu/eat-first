@@ -67,7 +67,7 @@ const makeFood = (id, name, category, dateLabelType, labelDate, quantityAmount, 
 });
 
 const sampleState = {
-  schemaVersion: "1.3.0",
+  schemaVersion: "1.4.0",
   appId: "eat-first",
   preferences: {
     locale: "zh-CN",
@@ -79,7 +79,38 @@ const sampleState = {
       defaultServings: 1,
       defaultMaxMinutes: 30,
       dietaryNotes: "少辣",
-      appliances: { oven: false, microwave: false, air_fryer: false, rice_cooker: true }
+      equipment: {
+        hob: true,
+        oven: false,
+        microwave: true,
+        air_fryer: false,
+        electric_griddle: false,
+        outdoor_grill: false,
+        rice_cooker: true,
+        steamer: true,
+        pressure_cooker: false,
+        multicooker: false,
+        slow_cooker: false,
+        blender: false,
+        hand_blender: false,
+        food_processor: false,
+        toaster: true,
+        sandwich_press: false
+      },
+      customEquipment: ["塔吉锅"],
+      pantryPolicy: "everyday",
+      pantryStaples: {
+        cooking_oil: true,
+        salt: true,
+        sugar: true,
+        soy_sauce: true,
+        vinegar: true,
+        black_pepper: false,
+        flour: false,
+        starch: true,
+        butter: false
+      },
+      customPantryStaples: ["味噌", "鱼露"]
     }
   },
   foods: [
@@ -109,6 +140,7 @@ async function reload() {
   await send("Page.reload", { ignoreCache: true });
   await delay(1600);
   await evaluate("document.fonts.ready");
+  await evaluate("window.scrollTo(0, 0)");
   await delay(400);
 }
 
@@ -120,7 +152,7 @@ async function capture(name) {
   });
   const outputDir = resolve("output/playwright");
   await mkdir(outputDir, { recursive: true });
-  const output = join(outputDir, `eat-first-v07-${name}.png`);
+  const output = join(outputDir, `eat-first-v08-${name}.png`);
   await writeFile(output, Buffer.from(result.data, "base64"));
   console.log(output);
 }
@@ -129,8 +161,25 @@ await evaluate("localStorage.removeItem('eat-first:v1:state')");
 await reload();
 await capture("onboarding-430x900");
 
-await evaluate(`localStorage.setItem('eat-first:v1:state', ${JSON.stringify(JSON.stringify(sampleState))})`);
-await reload();
+await evaluate(
+  "Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.includes('打开我的冰箱') || button.textContent?.includes('Open my fridge'))?.click()"
+);
+await delay(350);
+await evaluate(
+  `localStorage.setItem('eat-first:v1:state', ${JSON.stringify(JSON.stringify(sampleState))}); location.reload()`
+);
+await delay(1800);
+await evaluate("document.fonts.ready");
+await evaluate("window.scrollTo(0, 0)");
+await delay(250);
+const hydratedState = await evaluate("localStorage.getItem('eat-first:v1:state')");
+if (!hydratedState.result.value?.includes('"hasSeenOnboarding":true')) {
+  throw new Error(`Seeded state was not hydrated: ${JSON.stringify(hydratedState.result.value)}`);
+}
+const onboardingVisible = await evaluate(
+  "document.body.textContent?.includes('打开我的冰箱') || document.body.textContent?.includes('Open my fridge')"
+);
+if (onboardingVisible.result.value) throw new Error('Onboarding remained visible after seeded reload');
 
 for (const [name, hash] of [
   ["home-430x900", "#/"],
@@ -147,6 +196,13 @@ for (const [name, hash] of [
     await evaluate("Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.includes('\u751f\u6210\u83dc\u8c31\u7075\u611f'))?.click()");
     await delay(350);
     await capture("recipe-setup-430x900");
+    await evaluate("Array.from(document.querySelectorAll('summary')).find((summary) => summary.textContent?.includes('\u8c03\u6574\u98df\u6750\u8303\u56f4'))?.click()");
+    await delay(250);
+    await capture("recipe-food-roles-430x900");
+    await evaluate("Array.from(document.querySelectorAll('summary')).find((summary) => summary.textContent?.includes('\u8c03\u6574\u98df\u6750\u8303\u56f4'))?.click()");
+    await evaluate("Array.from(document.querySelectorAll('summary')).find((summary) => summary.textContent?.includes('\u672c\u6b21\u505a\u996d\u6761\u4ef6'))?.click()");
+    await delay(250);
+    await capture("recipe-meal-setup-430x900");
     await evaluate("Array.from(document.querySelectorAll('button')).find((button) => button.getAttribute('aria-label')?.includes('\u5173\u95ed'))?.click()");
   }
   if (name === "fridge-430x900") {
@@ -156,6 +212,46 @@ for (const [name, hash] of [
     await evaluate("Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.includes('用了一些'))?.click()");
     await delay(250);
     await capture("fridge-partial-430x900");
+  }
+  if (name === "settings-430x900") {
+    const equipmentDisclosure = await evaluate(`(() => {
+      const summary = Array.from(document.querySelectorAll('summary')).find((item) => item.textContent?.includes('\u6211\u7684\u53a8\u5177'));
+      summary?.scrollIntoView({ block: 'start' });
+      summary?.click();
+      return Boolean(summary);
+    })()`);
+    if (!equipmentDisclosure.result.value) throw new Error('Equipment disclosure was not found');
+    await delay(300);
+    await capture("settings-equipment-430x900");
+    const customEquipmentInput = await evaluate(`(() => {
+      const input = Array.from(document.querySelectorAll('input')).find((item) => item.placeholder?.includes('\u5854\u5409\u9505'));
+      input?.scrollIntoView({ block: 'center' });
+      input?.focus();
+      return Boolean(input);
+    })()`);
+    if (!customEquipmentInput.result.value) throw new Error('Custom equipment input was not found');
+    await send("Input.insertText", { text: "\u7535\u706b\u9505" });
+    await delay(150);
+    const addCustomEquipment = await evaluate(`(() => {
+      const input = document.activeElement;
+      const form = input?.closest('form');
+      const button = form?.querySelector('button[type="submit"]');
+      button?.click();
+      return Boolean(button);
+    })()`);
+    if (!addCustomEquipment.result.value) throw new Error('Custom equipment add button was not found');
+    await delay(350);
+    const customEquipmentState = await evaluate("localStorage.getItem('eat-first:v1:state')");
+    if (!customEquipmentState.result.value?.includes('\u7535\u706b\u9505')) {
+      throw new Error('Custom equipment was not saved');
+    }
+    await capture("settings-custom-equipment-430x900");
+    await evaluate(`(() => {
+      const input = Array.from(document.querySelectorAll('input')).find((item) => item.placeholder?.includes('\u5473\u564c'));
+      input?.scrollIntoView({ block: 'center' });
+    })()`);
+    await delay(250);
+    await capture("settings-custom-pantry-430x900");
   }
 }
 

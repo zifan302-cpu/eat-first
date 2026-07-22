@@ -3,7 +3,9 @@ import {
   buildRecipeSystemPrompt,
   categoryFromTags,
   createModelFoodAliases,
-  parseRecipeJson
+  normalizeCustomLabels,
+  parseRecipeJson,
+  validateRecipeOutput
 } from "./api.mjs";
 
 describe("barcode category confidence", () => {
@@ -27,20 +29,30 @@ describe("recipe model boundary", () => {
     const chinesePrompt = buildRecipeSystemPrompt({
       locale: "zh-CN",
       cuisine: "auto",
-      appliances: ["rice_cooker"]
+      equipment: ["hob", "rice_cooker", "steamer"],
+      pantryPolicy: "strict",
+      pantryStaples: ["cooking_oil", "salt"],
+      cookingGoal: "rescue_more"
     });
     expect(chinesePrompt).toContain("Simplified Chinese");
     expect(chinesePrompt).toContain("Chinese home cooking");
     expect(chinesePrompt).toContain("rice cooker");
+    expect(chinesePrompt).toContain("steamer");
+    expect(chinesePrompt).toContain("only these saved standard staples");
+    expect(chinesePrompt).toContain("use more urgent fridge foods");
 
     const englishPrompt = buildRecipeSystemPrompt({
       locale: "en-GB",
       cuisine: "global_everyday",
-      appliances: []
+      equipment: [],
+      pantryPolicy: "everyday",
+      pantryStaples: [],
+      cookingGoal: "no_cook"
     });
     expect(englishPrompt).toContain("British English");
     expect(englishPrompt).toContain("global everyday home cooking");
-    expect(englishPrompt).toContain("Do not require an oven");
+  expect(englishPrompt).toContain("Do not require other powered or heating equipment");
+    expect(englishPrompt).toContain("Do not use heat");
   });
 
   it("uses short aliases and removes internal ids from visible recipe text", () => {
@@ -62,6 +74,14 @@ describe("recipe model boundary", () => {
             ingredients: ["牛腩（f1） 250克", `番茄 (${tomatoId}) 2个`],
             steps: ["切块", "慢炖至软烂", "调味", "装盘"],
             usesFoodIds: ["f1", "f2"]
+          },
+          {
+            title: "番茄牛腩面",
+            summary: "更快的面食版本",
+            totalMinutes: 30,
+            ingredients: ["牛腩 150克", "番茄 1个", "面条 1份"],
+            steps: ["切块", "翻炒", "加水煮熟", "下面条"],
+            usesFoodIds: ["f1", "f2"]
           }
         ]
       }),
@@ -70,5 +90,30 @@ describe("recipe model boundary", () => {
 
     expect(recipes[0].ingredients).toEqual(["牛腩 250克", "番茄 2个"]);
     expect(recipes[0].usesFoodIds).toEqual([beefId, tomatoId]);
+  });
+
+  it("rejects output that misses required foods or the time limit", () => {
+    const recipes = [
+      { title: "Fast", totalMinutes: 20, ingredients: ["Tomato"], steps: ["Cook"], usesFoodIds: ["tomato"] },
+      { title: "Slow", totalMinutes: 60, ingredients: ["Egg"], steps: ["Cook"], usesFoodIds: ["egg"] }
+    ];
+    expect(() => validateRecipeOutput(recipes, {
+      requiredFoods: [{ id: "mushroom" }],
+      maxMinutes: 30
+    })).toThrow("REQUIRED_FOOD_MISSING");
+    expect(() => validateRecipeOutput(recipes, {
+      requiredFoods: [],
+      maxMinutes: 15
+    })).toThrow("TIME_LIMIT_MISSING");
+  });
+
+  it("treats custom kitchen labels as bounded names", () => {
+    expect(normalizeCustomLabels([
+      "  Tagine  ",
+      "tagine",
+      "miso   paste",
+      "x".repeat(40),
+      null
+    ], 3)).toEqual(["Tagine", "miso paste", "x".repeat(24)]);
   });
 });

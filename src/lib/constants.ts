@@ -1,13 +1,14 @@
 import type {
-  CookingAppliance,
+  CookingEquipment,
   DateLabelType,
   FoodCategory,
   FoodQuantityUnit,
+  PantryStaple,
   RecipeCuisinePreference
 } from "../types/food";
 
 export const STORAGE_KEY = "eat-first:v1:state";
-export const SCHEMA_VERSION = "1.3.0";
+export const SCHEMA_VERSION = "1.4.0";
 export const APP_ID = "eat-first";
 
 export const DATE_LABEL_TYPES: DateLabelType[] = [
@@ -51,9 +52,43 @@ export const RECIPE_CUISINE_PREFERENCES: RecipeCuisinePreference[] = [
   "global_everyday"
 ];
 
-export const COOKING_APPLIANCES: CookingAppliance[] = [
+export const COOKING_EQUIPMENT: CookingEquipment[] = [
+  "hob",
   "oven",
   "microwave",
   "air_fryer",
-  "rice_cooker"
+  "electric_griddle",
+  "outdoor_grill",
+  "rice_cooker",
+  "steamer",
+  "pressure_cooker",
+  "multicooker",
+  "slow_cooker",
+  "blender",
+  "hand_blender",
+  "food_processor",
+  "toaster",
+  "sandwich_press"
+];
+
+export const COOKING_EQUIPMENT_GROUPS: Record<
+  "heat" | "pot" | "prep" | "light",
+  CookingEquipment[]
+> = {
+  heat: ["hob", "oven", "microwave", "air_fryer", "electric_griddle", "outdoor_grill"],
+  pot: ["rice_cooker", "steamer", "pressure_cooker", "multicooker", "slow_cooker"],
+  prep: ["blender", "hand_blender", "food_processor"],
+  light: ["toaster", "sandwich_press"]
+};
+
+export const PANTRY_STAPLES: PantryStaple[] = [
+  "cooking_oil",
+  "salt",
+  "sugar",
+  "soy_sauce",
+  "vinegar",
+  "black_pepper",
+  "flour",
+  "starch",
+  "butter"
 ];

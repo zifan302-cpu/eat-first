@@ -22,7 +22,7 @@ export function HomePage(): JSX.Element {
   const topFoods = getTopFoods(state.foods, state.preferences.topN);
   const recipeCandidates = getTopFoods(state.foods, state.foods.length);
   const recipeFoods = recipeCandidates.filter(isRecipeEligible).slice(0, 8);
-  const recipePriorityFoods = recipeFoods.slice(0, 3);
+  const recipeSuggestedFoods = recipeFoods.slice(0, 3);
   const game = getGameProgress(state.foods);
   const captain = CHARACTERS.tomato;
   const scout = CHARACTERS.broccoli;
@@ -165,7 +165,7 @@ export function HomePage(): JSX.Element {
 
       <RecipeDialog
         open={recipeOpen}
-        priorityFoods={recipePriorityFoods}
+        suggestedFoods={recipeSuggestedFoods}
         foods={recipeCandidates}
         locale={locale}
         preferences={state.preferences.recipe}

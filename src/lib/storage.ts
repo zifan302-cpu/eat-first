@@ -1,11 +1,20 @@
 import type {
   AppStateEnvelope,
+  CookingEquipment,
   FoodItem,
   LocaleCode,
+  PantryPolicy,
+  PantryStaple,
   RecipeCuisinePreference,
   UserPreferences
 } from "../types/food";
-import { APP_ID, SCHEMA_VERSION, STORAGE_KEY } from "./constants";
+import {
+  APP_ID,
+  COOKING_EQUIPMENT,
+  PANTRY_STAPLES,
+  SCHEMA_VERSION,
+  STORAGE_KEY
+} from "./constants";
 import { isoNow } from "./dates";
 import { parseQuantityText } from "./quantity";
 
@@ -25,6 +34,7 @@ export function isImportableState(input: unknown): boolean {
     isObject(input) &&
     input.appId === APP_ID &&
     (input.schemaVersion === SCHEMA_VERSION ||
+      input.schemaVersion === "1.3.0" ||
       input.schemaVersion === "1.2.0" ||
       input.schemaVersion === "1.1.0" ||
       input.schemaVersion === "1.0.0") &&
@@ -35,6 +45,28 @@ export function isImportableState(input: unknown): boolean {
 const recipeServings = [1, 2, 3, 4] as const;
 const recipeMinutes = [15, 30, 45, 60] as const;
 const cuisinePreferences: RecipeCuisinePreference[] = ["auto", "chinese_home", "global_everyday"];
+const pantryPolicies: PantryPolicy[] = ["strict", "everyday", "flexible"];
+
+function booleanRecord<T extends string>(keys: readonly T[], enabled: readonly T[] = []): Record<T, boolean> {
+  const enabledSet = new Set(enabled);
+  return Object.fromEntries(keys.map((key) => [key, enabledSet.has(key)])) as Record<T, boolean>;
+}
+
+function normalizeCustomLabels(input: unknown, limit: number): string[] {
+  if (!Array.isArray(input)) return [];
+  const seen = new Set<string>();
+  const labels: string[] = [];
+  for (const value of input) {
+    if (typeof value !== "string") continue;
+    const label = value.trim().replace(/\s+/g, " ").slice(0, 24);
+    const key = label.toLocaleLowerCase();
+    if (!label || seen.has(key)) continue;
+    seen.add(key);
+    labels.push(label);
+    if (labels.length >= limit) break;
+  }
+  return labels;
+}
 
 function defaultRecipePreferences(): UserPreferences["recipe"] {
   return {
@@ -42,19 +74,39 @@ function defaultRecipePreferences(): UserPreferences["recipe"] {
     defaultServings: 1,
     defaultMaxMinutes: 30,
     dietaryNotes: "",
-    appliances: {
-      oven: false,
-      microwave: false,
-      air_fryer: false,
-      rice_cooker: false
-    }
+    equipment: booleanRecord(COOKING_EQUIPMENT, ["hob"]),
+    customEquipment: [],
+    pantryPolicy: "everyday",
+    pantryStaples: booleanRecord(PANTRY_STAPLES, ["cooking_oil", "salt"]),
+    customPantryStaples: []
   };
 }
 
 function normalizeRecipePreferences(input: unknown): UserPreferences["recipe"] {
   const defaults = defaultRecipePreferences();
   if (!isObject(input)) return defaults;
-  const appliances = isObject(input.appliances) ? input.appliances : {};
+  const equipmentInput = isObject(input.equipment)
+    ? input.equipment
+    : isObject(input.appliances)
+      ? input.appliances
+      : {};
+  const pantryInput = isObject(input.pantryStaples) ? input.pantryStaples : {};
+  const equipment = booleanRecord(COOKING_EQUIPMENT, ["hob"]);
+  const pantryStaples = booleanRecord(PANTRY_STAPLES);
+  for (const item of COOKING_EQUIPMENT) {
+    if (item === "hob") {
+      equipment[item] = equipmentInput[item] !== false;
+    } else {
+      equipment[item] = equipmentInput[item] === true;
+    }
+  }
+  for (const item of PANTRY_STAPLES) {
+    pantryStaples[item] = pantryInput[item] === true;
+  }
+  if (!("pantryStaples" in input)) {
+    pantryStaples.cooking_oil = true;
+    pantryStaples.salt = true;
+  }
 
   return {
     cuisine: cuisinePreferences.includes(input.cuisine as RecipeCuisinePreference)
@@ -68,12 +120,13 @@ function normalizeRecipePreferences(input: unknown): UserPreferences["recipe"] {
       : defaults.defaultMaxMinutes,
     dietaryNotes:
       typeof input.dietaryNotes === "string" ? input.dietaryNotes.trim().slice(0, 240) : "",
-    appliances: {
-      oven: appliances.oven === true,
-      microwave: appliances.microwave === true,
-      air_fryer: appliances.air_fryer === true,
-      rice_cooker: appliances.rice_cooker === true
-    }
+    equipment,
+    customEquipment: normalizeCustomLabels(input.customEquipment, 8),
+    pantryPolicy: pantryPolicies.includes(input.pantryPolicy as PantryPolicy)
+      ? (input.pantryPolicy as PantryPolicy)
+      : defaults.pantryPolicy,
+    pantryStaples,
+    customPantryStaples: normalizeCustomLabels(input.customPantryStaples, 12)
   };
 }
 

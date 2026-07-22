@@ -1,7 +1,10 @@
 import type {
-  CookingAppliance,
+  CookingEquipment,
   FoodItem,
   LocaleCode,
+  PantryPolicy,
+  PantryStaple,
+  RecipeCookingGoal,
   RecipeCuisinePreference
 } from "../types/food";
 import { getPriority } from "./priority";
@@ -29,10 +32,17 @@ export interface RecipeRequest {
   cuisine: RecipeCuisinePreference;
   servings: number;
   maxMinutes: number;
+  cookingGoal: RecipeCookingGoal;
   dietaryNotes?: string;
-  appliances: CookingAppliance[];
-  priorityFoods: RecipeFoodInput[];
+  equipment: CookingEquipment[];
+  customEquipment: string[];
+  pantryPolicy: PantryPolicy;
+  pantryStaples: PantryStaple[];
+  customPantryStaples: string[];
+  suggestedFoods: RecipeFoodInput[];
+  requiredFoods: RecipeFoodInput[];
   availableFoods: RecipeFoodInput[];
+  excludedFoodIds: string[];
 }
 
 interface BuildRecipeOptions {
@@ -40,8 +50,20 @@ interface BuildRecipeOptions {
   cuisine: RecipeCuisinePreference;
   servings: number;
   maxMinutes: number;
+  cookingGoal: RecipeCookingGoal;
   dietaryNotes: string;
-  appliances: CookingAppliance[];
+  equipment: CookingEquipment[];
+  customEquipment: string[];
+  pantryPolicy: PantryPolicy;
+  pantryStaples: PantryStaple[];
+  customPantryStaples: string[];
+}
+
+interface RecipeFoodRoles {
+  suggestedFoods: FoodItem[];
+  requiredFoods: FoodItem[];
+  availableFoods: FoodItem[];
+  excludedFoodIds: string[];
 }
 
 export function isRecipeEligible(food: FoodItem): boolean {
@@ -60,25 +82,42 @@ function toRecipeFood(food: FoodItem): RecipeFoodInput {
 }
 
 export function buildRecipeRequest(
-  priorityFoods: FoodItem[],
-  availableFoods: FoodItem[],
+  roles: RecipeFoodRoles,
   options: BuildRecipeOptions
 ): RecipeRequest {
-  const priority = priorityFoods.filter(isRecipeEligible).slice(0, 3);
-  const priorityIds = new Set(priority.map((food) => food.id));
-  const supporting = availableFoods
-    .filter((food) => isRecipeEligible(food) && !priorityIds.has(food.id))
-    .slice(0, 5);
+  const excludedIds = new Set(roles.excludedFoodIds);
+  const required = roles.requiredFoods
+    .filter((food) => isRecipeEligible(food) && !excludedIds.has(food.id))
+    .slice(0, 3);
+  const requiredIds = new Set(required.map((food) => food.id));
+  const suggested = roles.suggestedFoods
+    .filter((food) =>
+      isRecipeEligible(food) && !excludedIds.has(food.id) && !requiredIds.has(food.id)
+    )
+    .slice(0, 3);
+  const reservedIds = new Set([...requiredIds, ...suggested.map((food) => food.id)]);
+  const available = roles.availableFoods
+    .filter((food) =>
+      isRecipeEligible(food) && !excludedIds.has(food.id) && !reservedIds.has(food.id)
+    )
+    .slice(0, 15);
 
   return {
     locale: options.locale,
     cuisine: options.cuisine,
     servings: options.servings,
     maxMinutes: options.maxMinutes,
+    cookingGoal: options.cookingGoal,
     dietaryNotes: options.dietaryNotes.trim().slice(0, 240) || undefined,
-    appliances: options.appliances,
-    priorityFoods: priority.map(toRecipeFood),
-    availableFoods: supporting.map(toRecipeFood)
+    equipment: options.equipment,
+    customEquipment: options.customEquipment.slice(0, 8),
+    pantryPolicy: options.pantryPolicy,
+    pantryStaples: options.pantryStaples,
+    customPantryStaples: options.customPantryStaples.slice(0, 12),
+    suggestedFoods: suggested.map(toRecipeFood),
+    requiredFoods: required.map(toRecipeFood),
+    availableFoods: available.map(toRecipeFood),
+    excludedFoodIds: [...excludedIds].slice(0, 100)
   };
 }
 

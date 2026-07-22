@@ -2,7 +2,45 @@ export type LocaleCode = "zh-CN" | "en-GB";
 
 export type RecipeCuisinePreference = "auto" | "chinese_home" | "global_everyday";
 
-export type CookingAppliance = "oven" | "microwave" | "air_fryer" | "rice_cooker";
+export type RecipeCookingGoal =
+  | "auto"
+  | "fast"
+  | "rescue_more"
+  | "one_pan"
+  | "lunchbox"
+  | "batch_cook"
+  | "no_cook";
+
+export type CookingEquipment =
+  | "hob"
+  | "oven"
+  | "microwave"
+  | "air_fryer"
+  | "electric_griddle"
+  | "outdoor_grill"
+  | "rice_cooker"
+  | "steamer"
+  | "pressure_cooker"
+  | "multicooker"
+  | "slow_cooker"
+  | "blender"
+  | "hand_blender"
+  | "food_processor"
+  | "toaster"
+  | "sandwich_press";
+
+export type PantryPolicy = "strict" | "everyday" | "flexible";
+
+export type PantryStaple =
+  | "cooking_oil"
+  | "salt"
+  | "sugar"
+  | "soy_sauce"
+  | "vinegar"
+  | "black_pepper"
+  | "flour"
+  | "starch"
+  | "butter";
 
 export type DateLabelType = "use_by" | "best_before" | "opened" | "none";
 
@@ -87,7 +125,11 @@ export interface UserPreferences {
     defaultServings: 1 | 2 | 3 | 4;
     defaultMaxMinutes: 15 | 30 | 45 | 60;
     dietaryNotes: string;
-    appliances: Record<CookingAppliance, boolean>;
+    equipment: Record<CookingEquipment, boolean>;
+    customEquipment: string[];
+    pantryPolicy: PantryPolicy;
+    pantryStaples: Record<PantryStaple, boolean>;
+    customPantryStaples: string[];
   };
 }
 
@@ -97,7 +139,7 @@ export interface AppMeta {
 }
 
 export interface AppStateEnvelope {
-  schemaVersion: "1.3.0";
+  schemaVersion: "1.4.0";
   appId: "eat-first";
   preferences: UserPreferences;
   foods: FoodItem[];
