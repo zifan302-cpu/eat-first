@@ -118,7 +118,7 @@ async function handleBarcode(request, response, url) {
       "categories_tags"
     ].join(",");
     const userAgent = process.env.OPEN_FOOD_FACTS_USER_AGENT ||
-      "FridgeFreshSquad/0.11.1 (https://github.com/zifan302-cpu/eat-first)";
+      "FridgeFreshSquad/0.11.2 (https://github.com/zifan302-cpu/eat-first)";
     const endpoints = ["world.openfoodfacts.org", "uk.openfoodfacts.org"];
     let data = null;
     let source = null;

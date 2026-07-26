@@ -3,7 +3,7 @@ export const enGB = {
     name: "Fresh Squad",
     subtitle: "Know what to handle before food goes to waste.",
     valueLine: "A small team for your biggest fridge decisions.",
-    version: "V0.11.1 Daily use and feedback"
+    version: "V0.11.2 Centralised trial feedback"
   },
   nav: {
     home: "Home",
@@ -574,59 +574,23 @@ export const enGB = {
   feedbackForm: {
     eyebrow: "Two-minute trial check",
     title: "Tell us where the loop works — and where it breaks",
-    body: "The form uses activity on this device to pre-tick completed steps. Correct anything that is wrong, then share the summary yourself.",
-    stepsTitle: "Which steps did you actually try?",
-    stepsBody: "These answers are stored only in this browser until you choose to share or download them.",
-    steps: {
-      added_food: "Added food to the fridge",
-      understood_priorities: "Understood what to handle first",
-      handled_food: "Recorded eat, use some, freeze or discard",
-      used_frozen_area: "Used the frozen area or moved food back",
-      generated_recipe: "Generated a recipe idea",
-      updated_after_cooking: "Updated the fridge after cooking"
+    body: "Submit the short pilot form here. Your response goes directly to the Eat First Tally inbox.",
+    privacyTitle: "Only trial context is attached",
+    privacyBody: "Eat First sends the app version, language, install mode and objectively observed steps with this form. Food names and fridge contents stay on this device.",
+    contextVersion: "V0.11.2",
+    observedCount: "{count} steps observed",
+    installModes: {
+      standalone: "Home screen app",
+      browser: "Web browser"
     },
-    noneCompleted: "No steps selected",
-    painTitle: "Where was the biggest difficulty?",
-    painPoints: {
-      none: "No major difficulty",
-      adding: "Adding food",
-      priorities: "Understanding priorities",
-      actions: "Recording what happened",
-      freezing: "Freezing or defrosting",
-      recipes: "Generating a useful recipe",
-      cooking_update: "Updating after cooking",
-      other: "Something else"
-    },
-    helpfulTitle: "How useful was Eat First today?",
-    returnTitle: "Would you come back tomorrow?",
-    returnIntents: {
-      yes: "Yes",
-      maybe: "Maybe",
-      no: "No"
-    },
-    noteTitle: "What would make the next use better?",
-    notePlaceholder: "One concrete moment, confusion or missing feature is most useful.",
-    shareTitle: "Create a feedback summary",
-    privacy: "Eat First has no feedback server in V0.11.1. Nothing leaves this device unless you use Share, Copy or Download.",
-    generate: "Create summary",
-    share: "Share",
-    copy: "Copy",
-    download: "Save",
-    reset: "Reset this draft",
-    generated: "Summary ready. Review it before sharing.",
-    copied: "Feedback summary copied.",
-    copyFallback: "Copy was blocked. Select the summary text above manually.",
-    shared: "Feedback shared.",
-    shareFallback: "Sharing was not completed. You can copy or save the summary instead.",
-    downloaded: "Feedback text downloaded.",
-    summaryTitle: "Eat First trial feedback",
-    summaryVersion: "Version",
-    summaryDate: "Date",
-    summarySteps: "Steps tried",
-    summaryPain: "Biggest difficulty",
-    summaryHelpful: "Usefulness",
-    summaryReturn: "Would return tomorrow",
-    summaryNote: "Suggested improvement"
+    pilotLanguage: "The current pilot questionnaire is in Chinese. You can still submit it from the English interface.",
+    loading: "Loading the feedback form…",
+    loaded: "The feedback form is ready",
+    loadSlow: "The form is taking longer than expected. You can open it in a new tab below.",
+    openExternal: "Open form in a new tab",
+    submittedTitle: "Thanks — your feedback was received",
+    submittedBody: "The response is now in the Eat First Tally inbox. No fridge contents were included.",
+    embedTitle: "Eat First trial feedback form"
   },
   safety: {
     title: "Food safety boundary",

@@ -224,7 +224,7 @@ async function capture(name) {
   });
   const outputDir = resolve("output/playwright");
   await mkdir(outputDir, { recursive: true });
-  const output = join(outputDir, `eat-first-v0111-${name}.png`);
+  const output = join(outputDir, `eat-first-v0112-${name}.png`);
   await writeFile(output, Buffer.from(result.data, "base64"));
   console.log(output);
 }
@@ -348,31 +348,35 @@ for (const [name, hash] of [
     await capture("fridge-history-430x900");
   }
   if (name === "feedback-430x900") {
-    const feedbackReady = await evaluate(`(() => {
-      const rating = Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.trim() === '4');
-      const intent = Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.trim() === '\u613f\u610f');
-      rating?.click();
-      intent?.click();
-      return Boolean(rating && intent);
+    await delay(1800);
+    const feedbackEmbed = await evaluate(`(() => {
+      const iframe = document.querySelector('iframe[data-tally-src*="/embed/ZjX92A"]');
+      if (!iframe) return null;
+      const url = new URL(iframe.dataset.tallySrc);
+      return {
+        appVersion: url.searchParams.get('app_version'),
+        locale: url.searchParams.get('locale'),
+        entryPoint: url.searchParams.get('entry_point'),
+        installMode: url.searchParams.get('install_mode'),
+        observedSteps: url.searchParams.get('observed_steps'),
+        src: iframe.getAttribute('src'),
+        height: Math.round(iframe.getBoundingClientRect().height)
+      };
     })()`);
-    if (!feedbackReady.result.value) throw new Error("Feedback controls were not found");
-    await delay(200);
-    const generated = await evaluate(`(() => {
-      const button = Array.from(document.querySelectorAll('button')).find((item) => item.textContent?.includes('\u751f\u6210\u6458\u8981'));
-      button?.click();
-      return Boolean(button && !button.disabled);
-    })()`);
-    if (!generated.result.value) throw new Error("Feedback summary button was not ready");
-    await delay(300);
-    const summaryVisible = await evaluate("Boolean(document.querySelector('textarea[readonly]')?.value.includes('Eat First'))");
-    if (!summaryVisible.result.value) throw new Error("Feedback summary was not generated");
-    await evaluate("Array.from(document.querySelectorAll('h2')).find((heading) => heading.textContent?.includes('\u751f\u6210\u53cd\u9988\u6458\u8981'))?.scrollIntoView({ block: 'start' })");
-    await delay(200);
-    await capture("feedback-summary-430x900");
-    const feedbackDraft = await evaluate("localStorage.getItem('eat-first:v1:feedback-draft')");
-    if (!feedbackDraft.result.value?.includes('"helpful":4')) {
-      throw new Error("Feedback draft was not persisted");
+    const embed = feedbackEmbed.result.value;
+    if (
+      !embed ||
+      embed.appVersion !== "0.11.2" ||
+      embed.locale !== "zh-CN" ||
+      embed.entryPoint !== "app_feedback" ||
+      embed.installMode !== "browser" ||
+      !embed.observedSteps?.includes("\u628a\u98df\u7269\u6dfb\u52a0\u5230\u51b0\u7bb1") ||
+      !embed.src?.includes("/embed/ZjX92A") ||
+      embed.height < 600
+    ) {
+      throw new Error(`Invalid Tally feedback embed: ${JSON.stringify(embed)}`);
     }
+    await capture("feedback-tally-430x900");
   }
   if (name === "settings-430x900") {
     const equipmentDisclosure = await evaluate(`(() => {

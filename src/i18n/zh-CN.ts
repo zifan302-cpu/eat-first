@@ -5,7 +5,7 @@ export const zhCN: Messages = {
     name: "冰箱小鲜队",
     subtitle: "在食物浪费前，先知道今天该处理什么。",
     valueLine: "一支帮你处理冰箱大事的小队。",
-    version: "V0.11.1 日常使用与试用反馈"
+    version: "V0.11.2 集中收集试用反馈"
   },
   nav: {
     home: "首页",
@@ -576,59 +576,23 @@ export const zhCN: Messages = {
   feedbackForm: {
     eyebrow: "两分钟试用回顾",
     title: "告诉我：闭环在哪里顺畅，又在哪里中断",
-    body: "问卷会根据本机使用记录预先勾选完成过的环节。你可以修正后，再自行分享反馈摘要。",
-    stepsTitle: "你实际试用了哪些环节？",
-    stepsBody: "这些答案只保存在当前浏览器，直到你主动分享或下载。",
-    steps: {
-      added_food: "把食物添加到冰箱",
-      understood_priorities: "看懂今天应该先处理什么",
-      handled_food: "记录吃掉、用一些、冷冻或丢弃",
-      used_frozen_area: "使用冷冻区或把食物移回冰箱",
-      generated_recipe: "生成菜谱建议",
-      updated_after_cooking: "做完菜后更新冰箱"
+    body: "在这里填写简短试点问卷，提交后会直接进入 Eat First 的 Tally 反馈信箱。",
+    privacyTitle: "只附带试用环境，不上传冰箱内容",
+    privacyBody: "问卷会附带版本、语言、安装方式和本机可确认的已体验环节。具体食材名称与冰箱内容仍只保存在当前设备。",
+    contextVersion: "V0.11.2",
+    observedCount: "已观察到 {count} 个环节",
+    installModes: {
+      standalone: "主屏幕 App",
+      browser: "网页浏览器"
     },
-    noneCompleted: "尚未选择任何环节",
-    painTitle: "最大的困难出现在哪里？",
-    painPoints: {
-      none: "没有明显困难",
-      adding: "添加食物",
-      priorities: "理解优先顺序",
-      actions: "记录处理结果",
-      freezing: "冷冻或解冻",
-      recipes: "生成有用的菜谱",
-      cooking_update: "做饭后更新冰箱",
-      other: "其他环节"
-    },
-    helpfulTitle: "Eat First 今天对你有多大帮助？",
-    returnTitle: "你明天还愿意回来吗？",
-    returnIntents: {
-      yes: "愿意",
-      maybe: "可能",
-      no: "不愿意"
-    },
-    noteTitle: "怎样能让下一次使用更好？",
-    notePlaceholder: "一个具体的卡点、困惑或缺失功能最有价值。",
-    shareTitle: "生成反馈摘要",
-    privacy: "V0.11.1 暂无反馈服务器。除非你主动分享、复制或下载，否则内容不会离开当前设备。",
-    generate: "生成摘要",
-    share: "分享",
-    copy: "复制",
-    download: "保存",
-    reset: "重置这份草稿",
-    generated: "摘要已生成，请确认后再分享。",
-    copied: "反馈摘要已复制。",
-    copyFallback: "系统阻止了复制，请手动选择上方摘要文字。",
-    shared: "反馈已分享。",
-    shareFallback: "分享没有完成，可以改用复制或保存。",
-    downloaded: "反馈文本已下载。",
-    summaryTitle: "Eat First 试用反馈",
-    summaryVersion: "版本",
-    summaryDate: "日期",
-    summarySteps: "试用环节",
-    summaryPain: "最大困难",
-    summaryHelpful: "有用程度",
-    summaryReturn: "明天是否愿意回来",
-    summaryNote: "改进建议"
+    pilotLanguage: "当前试点问卷为中文。",
+    loading: "正在加载反馈问卷……",
+    loaded: "反馈问卷已准备好",
+    loadSlow: "问卷加载得有点久，可以点击下方按钮在新页面打开。",
+    openExternal: "在新页面打开问卷",
+    submittedTitle: "谢谢，反馈已经收到",
+    submittedBody: "回复已进入 Eat First 的 Tally 反馈信箱，其中不包含你的具体冰箱内容。",
+    embedTitle: "Eat First 试用反馈问卷"
   },
   safety: {
     title: "食品安全边界",
