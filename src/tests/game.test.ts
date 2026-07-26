@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createFoodFromInput, markFoodEaten, markFoodFrozen } from "../hooks/useFoodActions";
+import {
+  createFoodFromInput,
+  markFoodDiscarded,
+  markFoodEaten,
+  markFoodFrozen
+} from "../hooks/useFoodActions";
 import { characterForFood } from "../lib/characters";
 import { addCalendarDays, toDateInputValue } from "../lib/dates";
 import { getGameProgress } from "../lib/game";
@@ -40,6 +45,16 @@ describe("fresh squad progress", () => {
     const frozenToday = markFoodFrozen([second], second.id, today)[0];
 
     expect(getGameProgress([eatenYesterday, frozenToday], today).streakDays).toBe(2);
+  });
+
+  it("keeps discard neutral instead of awarding rescue progress", () => {
+    const milk = create("Milk");
+    const discarded = markFoodDiscarded([milk], milk.id, today)[0];
+    const progress = getGameProgress([discarded], today);
+
+    expect(progress.rescuedToday).toBe(0);
+    expect(progress.totalRescued).toBe(0);
+    expect(progress.handledToday).toBe(1);
   });
 
   it("uses only approved ingredient identities for character art", () => {

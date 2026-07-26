@@ -3,7 +3,7 @@ export const enGB = {
     name: "Fresh Squad",
     subtitle: "Know what to handle before food goes to waste.",
     valueLine: "A small team for your biggest fridge decisions.",
-    version: "V0.10 Recipes at the centre"
+    version: "V0.11 Cooking closes the loop"
   },
   nav: {
     home: "Home",
@@ -28,6 +28,7 @@ export const enGB = {
     useAll: "Use all",
     details: "Details",
     freeze: "Freeze",
+    thaw: "Move back to fridge",
     check: "Check",
     discard: "Discard",
     later: "Later",
@@ -337,6 +338,20 @@ export const enGB = {
     replaceOption: "Replace",
     refiningOption: "Replacing this option…",
     estimateOnly: "Amounts are suggestions until you confirm what you actually used.",
+    cookedAction: "I cooked this",
+    cookedLabel: "Cooked",
+    cookedOn: "Cooked {date}",
+    confirmUseTitle: "What did you actually use?",
+    confirmUseBody: "Review each fridge food. Nothing changes until you confirm.",
+    estimatedUse: "Recipe estimate: {amount}",
+    currentAmount: "In the fridge: {amount}",
+    outcomeAll: "Used all",
+    outcomePart: "Used some",
+    outcomeNone: "Did not use",
+    remainingAfterCooking: "Amount left",
+    invalidRemaining: "Enter an amount below the current quantity.",
+    confirmAndUpdate: "Confirm and update fridge",
+    missingCurrentFood: "This food is no longer active, so it will not be changed.",
     historyTitle: "Recent recipe ideas",
     historyCount: "{count} saved locally",
     historySeparator: " / ",
@@ -356,7 +371,20 @@ export const enGB = {
     frozen: "marked frozen",
     discarded: "marked discarded",
     deleted: "deleted",
-    later: "moved to tomorrow"
+    later: "moved to tomorrow",
+    restored: "moved back to the fridge",
+    cooked: "fridge updated"
+  },
+  feedback: {
+    added: "Ready for today’s plan.",
+    partial: "A real fridge change, recorded.",
+    eaten: "Nice — one less food forgotten.",
+    frozen: "Good save. It stays visible in the frozen section.",
+    discarded: "Recorded without blame. Honest outcomes improve the next plan.",
+    deleted: "The record was removed.",
+    later: "It will return to tomorrow’s priorities.",
+    restored: "Back in the active fridge plan.",
+    cooked: "Meal finished and the fridge now matches reality."
   },
   historyActions: {
     created: "Added",
@@ -371,6 +399,11 @@ export const enGB = {
   fridge: {
     editTitle: "Edit food",
     activeOnly: "Current foods",
+    frozenOnly: "Frozen foods",
+    historyOnly: "Handling record",
+    viewCurrent: "Current",
+    viewFrozen: "Frozen",
+    viewHistory: "History",
     deleteConfirm: "Delete this food item?",
     searchPlaceholder: "Search your fridge",
     useSomeTitle: "How much is left?",
@@ -379,7 +412,27 @@ export const enGB = {
     remainingText: "What remains",
     remainingPlaceholder: "Half a bottle, one portion...",
     savePartial: "Save remaining amount",
-    otherItems: "more foods"
+    otherItems: "more foods",
+    freezeTitle: "Freeze this food?",
+    freezeBody: "Freezing pauses today’s priority, but the food remains in your frozen section.",
+    freezeTipsTitle: "Before freezing",
+    freezeTips: [
+      "Follow the package instructions and official food-safety guidance.",
+      "Portion and label it so it is easier to use later.",
+      "Add a short note or adjust the amount if that will help."
+    ],
+    confirmFreeze: "Confirm frozen",
+    frozenBody: "Move it back to the active fridge when you plan to use it.",
+    thawTipsTitle: "When defrosting",
+    thawTips: [
+      "Follow the package instructions and official food-safety guidance.",
+      "Defrost only what you plan to use and keep the item labelled.",
+      "After moving it back, update its date or note if that helps you act in time."
+    ],
+    completedBody: "This item is kept as part of your local handling record.",
+    actionHistory: "Recent handling",
+    emptyFrozen: "Nothing is waiting in the frozen section.",
+    emptyHistory: "Completed food actions will appear here."
   },
   stats: {
     eaten: "Eaten",

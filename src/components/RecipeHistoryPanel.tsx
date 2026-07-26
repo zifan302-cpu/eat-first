@@ -1,4 +1,4 @@
-import { Clock3, Trash2 } from "lucide-react";
+import { CheckCircle2, Clock3, Trash2 } from "lucide-react";
 import type { Messages } from "../i18n/en-GB";
 import type { LocaleCode, RecipeHistoryEntry } from "../types/food";
 
@@ -51,6 +51,12 @@ export function RecipeHistoryPanel({
               <span className="block text-xs font-black text-ink">
                 {entry.recipes.map((recipe) => recipe.title).join(t.recipe.historySeparator)}
               </span>
+              {entry.cooked ? (
+                <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-leaf-100 px-2 py-0.5 text-[0.62rem] font-black text-leaf-700">
+                  <CheckCircle2 className="h-3 w-3" aria-hidden />
+                  {t.recipe.cookedLabel}
+                </span>
+              ) : null}
               <span className="mt-1 block text-[0.68rem] font-semibold text-ink-muted">
                 {dateFormatter.format(new Date(entry.createdAt))}
                 {t.recipe.summarySeparator}{entry.servings} {t.recipe.peopleUnit}

@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { createFoodFromInput, markFoodEaten, snoozeFoodUntilTomorrow, useFoodPart } from "../hooks/useFoodActions";
+import {
+  createFoodFromInput,
+  markFoodEaten,
+  markFoodFrozen,
+  restoreFrozenFood,
+  snoozeFoodUntilTomorrow,
+  useFoodPart
+} from "../hooks/useFoodActions";
 import { getActiveFoods, getPriority, getTopFoods } from "../lib/priority";
 import { toDateInputValue, addCalendarDays } from "../lib/dates";
 
@@ -75,5 +82,31 @@ describe("priority rules", () => {
     expect(updated.status).toBe("active");
     expect(updated.quantityAmount).toBe(2);
     expect(updated.actionHistory.at(-1)?.type).toBe("partially_used");
+  });
+
+  it("does not let a partial-use action increase or preserve a known amount", () => {
+    const item = createFoodFromInput(
+      {
+        name: "Tomatoes",
+        category: "vegetable",
+        dateLabelType: "none",
+        quantityAmount: 4,
+        quantityUnit: "item"
+      },
+      today
+    );
+
+    expect(useFoodPart([item], item.id, 5, undefined, today)[0]).toBe(item);
+    expect(useFoodPart([item], item.id, 4, undefined, today)[0]).toBe(item);
+    expect(useFoodPart([item], item.id, Number.NaN, undefined, today)[0]).toBe(item);
+  });
+
+  it("restores a frozen item to the active fridge and records the transition", () => {
+    const item = food("Peas", "best_before", 4);
+    const frozen = markFoodFrozen([item], item.id, today)[0];
+    const restored = restoreFrozenFood([frozen], item.id, today)[0];
+
+    expect(restored.status).toBe("active");
+    expect(restored.actionHistory.at(-1)?.type).toBe("restored");
   });
 });

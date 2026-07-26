@@ -5,7 +5,7 @@ export const zhCN: Messages = {
     name: "冰箱小鲜队",
     subtitle: "在食物浪费前，先知道今天该处理什么。",
     valueLine: "一支帮你处理冰箱大事的小队。",
-    version: "V0.10 菜谱主入口"
+    version: "V0.11 做饭后回到冰箱"
   },
   nav: {
     home: "首页",
@@ -30,6 +30,7 @@ export const zhCN: Messages = {
     useAll: "全部用完",
     details: "详情",
     freeze: "冷冻",
+    thaw: "移回冰箱",
     check: "检查",
     discard: "丢弃",
     later: "稍后",
@@ -339,6 +340,20 @@ export const zhCN: Messages = {
     replaceOption: "替换",
     refiningOption: "正在替换这个方案…",
     estimateOnly: "用量只是建议，实际使用后再由你确认。",
+    cookedAction: "我做了这道菜",
+    cookedLabel: "已做",
+    cookedOn: "完成于 {date}",
+    confirmUseTitle: "这次实际用了什么？",
+    confirmUseBody: "逐项确认冰箱食材；点击确认前不会修改库存。",
+    estimatedUse: "菜谱预计：{amount}",
+    currentAmount: "冰箱现有：{amount}",
+    outcomeAll: "全部用完",
+    outcomePart: "用了一些",
+    outcomeNone: "没有使用",
+    remainingAfterCooking: "做完后剩余",
+    invalidRemaining: "请输入小于当前数量的剩余量。",
+    confirmAndUpdate: "确认并更新冰箱",
+    missingCurrentFood: "这项食物已不在当前冰箱中，不会被修改。",
     historyTitle: "最近生成的菜谱",
     historyCount: "本地保存 {count} 组",
     historySeparator: " / ",
@@ -358,7 +373,20 @@ export const zhCN: Messages = {
     frozen: "已标记冷冻",
     discarded: "已标记丢弃",
     deleted: "已删除",
-    later: "已移到明天"
+    later: "已移到明天",
+    restored: "已移回冰箱",
+    cooked: "已同步更新冰箱"
+  },
+  feedback: {
+    added: "已经进入今天的处理计划。",
+    partial: "一次真实的冰箱变化，已经记下。",
+    eaten: "很好，少忘掉了一样食物。",
+    frozen: "及时保存成功；之后仍可在冷冻区找到。",
+    discarded: "如实记录，不责备；真实结果会让下次计划更准确。",
+    deleted: "这条记录已经删除。",
+    later: "明天会重新进入优先列表。",
+    restored: "已经回到当前冰箱计划。",
+    cooked: "这顿饭完成了，冰箱库存也和现实一致。"
   },
   historyActions: {
     created: "添加",
@@ -373,6 +401,11 @@ export const zhCN: Messages = {
   fridge: {
     editTitle: "编辑食物",
     activeOnly: "当前食物",
+    frozenOnly: "冷冻食物",
+    historyOnly: "食材处理记录",
+    viewCurrent: "当前",
+    viewFrozen: "冷冻区",
+    viewHistory: "处理记录",
     deleteConfirm: "确定删除这个食物吗？",
     searchPlaceholder: "搜索冰箱食材",
     useSomeTitle: "现在还剩多少？",
@@ -381,7 +414,27 @@ export const zhCN: Messages = {
     remainingText: "剩余说明",
     remainingPlaceholder: "半瓶、一份左右……",
     savePartial: "保存剩余分量",
-    otherItems: "种其他食材"
+    otherItems: "种其他食材",
+    freezeTitle: "确认冷冻这项食物？",
+    freezeBody: "冷冻后会退出今天的优先列表，但仍会保留在冷冻区。",
+    freezeTipsTitle: "冷冻前可以做",
+    freezeTips: [
+      "优先遵循包装说明与官方食品安全建议。",
+      "适当分装并标记，之后更容易取用。",
+      "如有需要，先修改数量或补充一条备注。"
+    ],
+    confirmFreeze: "确认已冷冻",
+    frozenBody: "准备使用时，可以把它移回当前冰箱。",
+    thawTipsTitle: "解冻时可以注意",
+    thawTips: [
+      "优先遵循包装说明与官方食品安全建议。",
+      "只解冻准备使用的份量，并保留清楚的标签。",
+      "移回当前冰箱后，可以补充日期或备注，方便及时处理。"
+    ],
+    completedBody: "这项食物会作为本地处理记录保留下来。",
+    actionHistory: "最近处理",
+    emptyFrozen: "冷冻区现在没有等待处理的食物。",
+    emptyHistory: "吃完或丢弃后的记录会出现在这里。"
   },
   stats: {
     eaten: "已吃掉",

@@ -27,7 +27,16 @@ interface AppStateContextValue {
 }
 
 export interface UndoNotice {
-  action: "added" | "partial" | "eaten" | "frozen" | "discarded" | "deleted" | "later";
+  action:
+    | "added"
+    | "partial"
+    | "eaten"
+    | "frozen"
+    | "discarded"
+    | "deleted"
+    | "later"
+    | "restored"
+    | "cooked";
   name: string;
 }
 

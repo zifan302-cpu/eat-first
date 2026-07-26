@@ -6,6 +6,7 @@ import type {
   PantryPolicy,
   PantryStaple,
   RecipeDifferenceTag,
+  RecipeCookedRecord,
   RecipeHistoryEntry,
   RecipeIdea,
   RecipeCuisinePreference,
@@ -37,6 +38,7 @@ export function isImportableState(input: unknown): boolean {
     isObject(input) &&
     input.appId === APP_ID &&
     (input.schemaVersion === SCHEMA_VERSION ||
+      input.schemaVersion === "1.5.0" ||
       input.schemaVersion === "1.4.0" ||
       input.schemaVersion === "1.3.0" ||
       input.schemaVersion === "1.2.0" ||
@@ -245,6 +247,7 @@ function normalizeRecipeHistory(input: unknown): RecipeHistoryEntry[] {
       ? entry.recipes.map(normalizeRecipeIdea).filter((recipe): recipe is RecipeIdea => recipe !== null).slice(0, 2)
       : [];
     if (recipes.length === 0) return [];
+    const cooked = normalizeCookedRecipe(entry.cooked, recipes.length);
     return [{
       id: entry.id.slice(0, 100),
       createdAt: createdAtDate.toISOString(),
@@ -258,9 +261,67 @@ function normalizeRecipeHistory(input: unknown): RecipeHistoryEntry[] {
         .includes(entry.cookingGoal as string)
           ? (entry.cookingGoal as RecipeHistoryEntry["cookingGoal"])
           : "auto",
-      recipes
+      recipes,
+      ...(cooked ? { cooked } : {})
     }];
   }).slice(0, 20);
+}
+
+function normalizeCookedRecipe(
+  input: unknown,
+  recipeCount: number
+): RecipeCookedRecord | undefined {
+  if (
+    !isObject(input) ||
+    typeof input.cookedAt !== "string" ||
+    typeof input.transactionId !== "string"
+  ) {
+    return undefined;
+  }
+  const cookedAt = new Date(input.cookedAt);
+  const recipeIndex = Number(input.recipeIndex);
+  if (
+    Number.isNaN(cookedAt.getTime()) ||
+    !Number.isInteger(recipeIndex) ||
+    recipeIndex < 0 ||
+    recipeIndex >= recipeCount
+  ) {
+    return undefined;
+  }
+  const seen = new Set<string>();
+  const uses = Array.isArray(input.uses)
+    ? input.uses.flatMap((use) => {
+        if (
+          !isObject(use) ||
+          typeof use.foodId !== "string" ||
+          seen.has(use.foodId) ||
+          !["all", "part", "not_used"].includes(String(use.outcome))
+        ) {
+          return [];
+        }
+        seen.add(use.foodId);
+        const remainingAmount =
+          typeof use.remainingAmount === "number" &&
+          Number.isFinite(use.remainingAmount) &&
+          use.remainingAmount > 0
+            ? Math.min(use.remainingAmount, 100_000)
+            : undefined;
+        const remainingText = boundedString(use.remainingText, 80) || undefined;
+        return [{
+          foodId: use.foodId.slice(0, 100),
+          outcome: use.outcome as RecipeCookedRecord["uses"][number]["outcome"],
+          ...(remainingAmount ? { remainingAmount } : {}),
+          ...(remainingText ? { remainingText } : {})
+        }];
+      }).slice(0, 8)
+    : [];
+
+  return {
+    recipeIndex,
+    cookedAt: cookedAt.toISOString(),
+    transactionId: input.transactionId.slice(0, 100),
+    uses
+  };
 }
 
 export function createDefaultState(now = new Date()): AppStateEnvelope {

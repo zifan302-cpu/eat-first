@@ -100,11 +100,20 @@ export type FoodActionType =
   | "snoozed"
   | "restored";
 
+export interface FoodActionContext {
+  transactionId?: string;
+  recipeHistoryId?: string;
+  recipeIndex?: number;
+}
+
 export interface FoodActionRecord {
   id: string;
   type: FoodActionType;
   at: string;
   note?: string;
+  transactionId?: string;
+  recipeHistoryId?: string;
+  recipeIndex?: number;
 }
 
 export interface FoodItem {
@@ -150,6 +159,22 @@ export interface RecipeIdea {
   usesFoods: RecipeFoodUse[];
 }
 
+export type RecipeFoodUseOutcome = "all" | "part" | "not_used";
+
+export interface RecipeCookedFoodUse {
+  foodId: string;
+  outcome: RecipeFoodUseOutcome;
+  remainingAmount?: number;
+  remainingText?: string;
+}
+
+export interface RecipeCookedRecord {
+  recipeIndex: number;
+  cookedAt: string;
+  transactionId: string;
+  uses: RecipeCookedFoodUse[];
+}
+
 export interface RecipeHistoryEntry {
   id: string;
   createdAt: string;
@@ -159,6 +184,7 @@ export interface RecipeHistoryEntry {
   maxMinutes: number;
   cookingGoal: RecipeCookingGoal;
   recipes: RecipeIdea[];
+  cooked?: RecipeCookedRecord;
 }
 
 export interface UserPreferences {
@@ -185,7 +211,7 @@ export interface AppMeta {
 }
 
 export interface AppStateEnvelope {
-  schemaVersion: "1.5.0";
+  schemaVersion: "1.6.0";
   appId: "eat-first";
   preferences: UserPreferences;
   foods: FoodItem[];

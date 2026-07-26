@@ -11,6 +11,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Messages } from "../i18n/en-GB";
 import { useAppState } from "../hooks/useAppState";
 import { COOKING_EQUIPMENT, PANTRY_STAPLES } from "../lib/constants";
+import { applyCookedRecipe } from "../lib/cooking";
 import { recipeErrorMessageKey } from "../lib/recipe-errors";
 import {
   buildRecipeRequest,
@@ -29,10 +30,12 @@ import type {
   RecipeCookingGoal,
   RecipeCuisinePreference,
   RecipeHistoryEntry,
+  RecipeCookedFoodUse,
   RecipeIdea,
   UserPreferences
 } from "../types/food";
 import { RecipeHistoryPanel } from "./RecipeHistoryPanel";
+import { RecipeCookedSheet } from "./RecipeCookedSheet";
 import { RecipeResultCard } from "./RecipeResultCard";
 import {
   RecipeFoodSelector,
@@ -67,7 +70,11 @@ export function RecipeDialog({
   t,
   onClose
 }: RecipeDialogProps): JSX.Element {
-  const { state: appState, setState: setAppState } = useAppState();
+  const {
+    state: appState,
+    setState: setAppState,
+    commitState
+  } = useAppState();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const requestRef = useRef<AbortController | null>(null);
   const requestSequenceRef = useRef(0);
@@ -89,6 +96,10 @@ export function RecipeDialog({
   const [refiningIndex, setRefiningIndex] = useState<number | null>(null);
   const [refineError, setRefineError] = useState<{ index: number; message: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [cookingTarget, setCookingTarget] = useState<{
+    historyId: string;
+    recipeIndex: number;
+  } | null>(null);
 
   const eligibleFoods = useMemo(() => foods.filter(isRecipeEligible), [foods]);
   const blockedCount = foods.length - eligibleFoods.length;
@@ -100,9 +111,19 @@ export function RecipeDialog({
   }), [eligibleFoods, foodRoles]);
   const requestFoodCount = roleFoods.suggested.length + roleFoods.required.length + roleFoods.available.length;
   const foodNames = useMemo(
-    () => Object.fromEntries(foods.map((food) => [food.id, food.name])),
-    [foods]
+    () => Object.fromEntries(appState.foods.map((food) => [food.id, food.name])),
+    [appState.foods]
   );
+  const activeHistoryEntry = useMemo(
+    () => appState.recipeHistory.find((entry) => entry.id === activeHistoryId),
+    [activeHistoryId, appState.recipeHistory]
+  );
+  const cookingHistoryEntry = cookingTarget
+    ? appState.recipeHistory.find((entry) => entry.id === cookingTarget.historyId)
+    : undefined;
+  const cookingRecipe = cookingTarget
+    ? cookingHistoryEntry?.recipes[cookingTarget.recipeIndex]
+    : undefined;
   const active = embedded || open;
 
   useEffect(() => {
@@ -352,6 +373,17 @@ export function RecipeDialog({
       setViewingHistory(false);
       setActiveHistoryId(null);
     }
+    setCookingTarget(null);
+  }
+
+  function confirmCookedRecipe(uses: RecipeCookedFoodUse[]) {
+    if (!cookingTarget || !cookingRecipe) return;
+    const { historyId, recipeIndex } = cookingTarget;
+    commitState(
+      (current) => applyCookedRecipe(current, historyId, recipeIndex, uses),
+      { action: "cooked", name: cookingRecipe.title }
+    );
+    setCookingTarget(null);
   }
 
   const goalLabel = t.recipe.cookingGoals[cookingGoal];
@@ -673,6 +705,17 @@ export function RecipeDialog({
                 canRefine={!viewingHistory && activeRequest !== null}
                 refining={refiningIndex === index}
                 error={refineError?.index === index ? refineError.message : undefined}
+                cooked={activeHistoryEntry?.cooked?.recipeIndex === index}
+                cookedAt={
+                  activeHistoryEntry?.cooked?.recipeIndex === index
+                    ? activeHistoryEntry.cooked.cookedAt
+                    : undefined
+                }
+                onCook={() => {
+                  if (activeHistoryId) {
+                    setCookingTarget({ historyId: activeHistoryId, recipeIndex: index });
+                  }
+                }}
                 onRefine={(adjustment) => void refineRecipe(index, adjustment)}
                 onCancel={cancelGeneration}
                 onDismissError={() => setRefineError(null)}
@@ -683,6 +726,16 @@ export function RecipeDialog({
 
         <p className="text-xs font-semibold leading-5 text-ink-muted">{t.recipe.boundary}</p>
       </div>
+      {cookingRecipe ? (
+        <RecipeCookedSheet
+          recipe={cookingRecipe}
+          foods={appState.foods}
+          locale={locale}
+          t={t}
+          onClose={() => setCookingTarget(null)}
+          onConfirm={confirmCookedRecipe}
+        />
+      ) : null}
     </>
   );
 

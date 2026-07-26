@@ -1,5 +1,6 @@
 import {
   CircleAlert,
+  CheckCircle2,
   ChefHat,
   Clock3,
   LoaderCircle,
@@ -29,6 +30,9 @@ interface RecipeResultCardProps {
   canRefine: boolean;
   refining: boolean;
   error?: string;
+  cooked: boolean;
+  cookedAt?: string;
+  onCook: () => void;
   onRefine: (adjustment: RecipeAdjustment) => void;
   onCancel: () => void;
   onDismissError: () => void;
@@ -50,6 +54,9 @@ export function RecipeResultCard({
   canRefine,
   refining,
   error,
+  cooked,
+  cookedAt,
+  onCook,
   onRefine,
   onCancel,
   onDismissError
@@ -257,6 +264,31 @@ export function RecipeResultCard({
           </div>
         </details>
       ) : null}
+
+      <button
+        type="button"
+        disabled={cooked}
+        onClick={onCook}
+        className={cx(
+          "mt-4 w-full",
+          cooked ? "fresh-button-secondary cursor-default" : "fresh-button-primary"
+        )}
+      >
+        <CheckCircle2 className="mr-2 inline h-4 w-4" aria-hidden />
+        {cooked
+          ? cookedAt
+            ? t.recipe.cookedOn.replace(
+                "{date}",
+                new Intl.DateTimeFormat(locale, {
+                  month: "short",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit"
+                }).format(new Date(cookedAt))
+              )
+            : t.recipe.cookedLabel
+          : t.recipe.cookedAction}
+      </button>
 
       <p className="mt-3 flex items-center gap-1.5 text-[0.68rem] font-semibold text-ink-muted">
         <Clock3 className="h-3.5 w-3.5" aria-hidden />

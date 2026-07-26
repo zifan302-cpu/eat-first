@@ -27,6 +27,14 @@ function compactDate(food: FoodItem, t: Messages): string {
 export function FoodListItem({ food, locale, t, onOpen }: FoodListItemProps): JSX.Element {
   const priority = getPriority(food);
   const amount = quantityLabel(food, locale);
+  const statusAt =
+    food.status === "frozen"
+      ? food.frozenAt
+      : food.status === "eaten"
+        ? food.consumedAt
+        : food.status === "discarded"
+          ? food.discardedAt
+          : undefined;
   return (
     <article className="rounded-[1.05rem] border border-paper-line bg-paper-soft shadow-card">
       <button
@@ -38,11 +46,21 @@ export function FoodListItem({ food, locale, t, onOpen }: FoodListItemProps): JS
         <span className="min-w-0 flex-1">
           <span className="flex items-start justify-between gap-2">
             <span className="truncate font-editorial text-base font-black tracking-tight text-ink">{food.name}</span>
-            <PriorityBadge priority={priority} t={t} />
+            {food.status === "active" ? (
+              <PriorityBadge priority={priority} t={t} />
+            ) : (
+              <span className="fresh-pill shrink-0 bg-paper text-leaf-700">
+                {t.status[food.status]}
+              </span>
+            )}
           </span>
           <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-ink-muted">
             {amount ? <span className="font-extrabold text-ink">{amount}</span> : null}
-            <span>{t.dateTypes[food.dateLabelType]} · {compactDate(food, t)}</span>
+            {food.status === "active" ? (
+              <span>{t.dateTypes[food.dateLabelType]} · {compactDate(food, t)}</span>
+            ) : statusAt ? (
+              <span>{new Date(statusAt).toLocaleDateString(locale)}</span>
+            ) : null}
           </span>
         </span>
         <ChevronRight aria-hidden className="h-4 w-4 shrink-0 text-ink-muted" />

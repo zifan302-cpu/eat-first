@@ -21,9 +21,14 @@ export function UndoToast(): JSX.Element | null {
 
   return (
     <div role="status" aria-live="polite" className="fixed inset-x-3 bottom-[calc(76px+env(safe-area-inset-bottom))] z-40 mx-auto flex max-w-md items-center gap-2 rounded-[1rem] border border-ink bg-ink px-3 py-2 text-paper shadow-lift">
-      <p className="min-w-0 flex-1 truncate text-sm font-bold">
-        {undoEntry.notice.name} · {label}
-      </p>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-bold">
+          {undoEntry.notice.name} · {label}
+        </p>
+        <p className="mt-0.5 line-clamp-2 text-[0.68rem] font-semibold leading-4 text-paper/72">
+          {t.feedback[undoEntry.notice.action]}
+        </p>
+      </div>
       <button
         type="button"
         onClick={undoState}

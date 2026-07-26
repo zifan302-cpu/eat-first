@@ -14,6 +14,7 @@ import { categoryOptions } from "../i18n";
 import { Search } from "lucide-react";
 
 type Filter = "all" | DateLabelType;
+type FridgeView = "current" | "frozen" | "history";
 
 const filters: Filter[] = ["all", "use_by", "best_before", "opened", "none"];
 
@@ -22,27 +23,66 @@ export function FridgePage(): JSX.Element {
   const actions = useFoodActions();
   const { locale, t } = useLocale();
   const [filter, setFilter] = useState<Filter>("all");
+  const [view, setView] = useState<FridgeView>("current");
   const [category, setCategory] = useState<"all" | FoodCategory>("all");
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<FoodItem | null>(null);
   const [selected, setSelected] = useState<FoodItem | null>(null);
 
   const foods = useMemo(() => {
-    const active = sortActiveFoodsByPriority(state.foods);
-    return active.filter((food) => {
-      if (filter !== "all" && food.dateLabelType !== filter) return false;
+    const viewed =
+      view === "current"
+        ? sortActiveFoodsByPriority(state.foods)
+        : state.foods
+            .filter((food) =>
+              view === "frozen"
+                ? food.status === "frozen"
+                : food.status === "eaten" || food.status === "discarded"
+            )
+            .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    return viewed.filter((food) => {
+      if (view === "current" && filter !== "all" && food.dateLabelType !== filter) return false;
       if (category !== "all" && food.category !== category) return false;
       return !query.trim() || food.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase());
     });
-  }, [category, filter, query, state.foods]);
+  }, [category, filter, query, state.foods, view]);
+
+  const viewLabels = {
+    current: t.fridge.viewCurrent,
+    frozen: t.fridge.viewFrozen,
+    history: t.fridge.viewHistory
+  };
+  const countLabel =
+    view === "current"
+      ? t.fridge.activeOnly
+      : view === "frozen"
+        ? t.fridge.frozenOnly
+        : t.fridge.historyOnly;
 
   return (
     <div className="space-y-5">
       <PageHeader
         eyebrow={t.app.name}
         title={t.pages.fridgeTitle}
-        body={`${t.fridge.activeOnly} · ${foods.length}`}
+        body={`${countLabel} · ${foods.length}`}
       />
+
+      <div className="grid grid-cols-3 gap-2 rounded-[1rem] border border-paper-line bg-paper-soft p-1.5">
+        {(Object.keys(viewLabels) as FridgeView[]).map((item) => (
+          <button
+            key={item}
+            type="button"
+            onClick={() => setView(item)}
+            aria-pressed={view === item}
+            className={cx(
+              "min-h-10 rounded-[0.75rem] px-2 text-xs font-black transition",
+              view === item ? "bg-ink text-paper shadow-card" : "text-ink-muted"
+            )}
+          >
+            {viewLabels[item]}
+          </button>
+        ))}
+      </div>
 
       <div className="relative">
         <Search aria-hidden className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
@@ -50,32 +90,38 @@ export function FridgePage(): JSX.Element {
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder={t.fridge.searchPlaceholder}
+          aria-label={t.fridge.searchPlaceholder}
           className="fresh-field pl-10"
         />
       </div>
 
-      <div className="grid grid-cols-[1fr_auto] gap-2">
-        <div className="scrollbar-none flex gap-2 overflow-x-auto pb-1">
-        {filters.map((item) => (
-          <button
-            key={item}
-            type="button"
-            onClick={() => setFilter(item)}
-            className={cx(
-              "min-h-9 shrink-0 rounded-full border px-3.5 text-xs font-black transition",
-              filter === item
-                ? "border-ink bg-ink text-paper"
-                : "border-paper-line bg-paper-soft text-ink-muted"
-            )}
-          >
-            {item === "all" ? t.filters.all : t.filters[item]}
-          </button>
-        ))}
-        </div>
+      <div className={cx("grid gap-2", view === "current" ? "grid-cols-[1fr_auto]" : "grid-cols-1")}>
+        {view === "current" ? (
+          <div className="scrollbar-none flex gap-2 overflow-x-auto pb-1">
+            {filters.map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setFilter(item)}
+                className={cx(
+                  "min-h-9 shrink-0 rounded-full border px-3.5 text-xs font-black transition",
+                  filter === item
+                    ? "border-ink bg-ink text-paper"
+                    : "border-paper-line bg-paper-soft text-ink-muted"
+                )}
+              >
+                {item === "all" ? t.filters.all : t.filters[item]}
+              </button>
+            ))}
+          </div>
+        ) : null}
         <select
           value={category}
           onChange={(event) => setCategory(event.target.value as "all" | FoodCategory)}
-          className="min-h-9 max-w-[8.5rem] rounded-full border border-paper-line bg-paper-soft px-3 text-xs font-black text-ink"
+          className={cx(
+            "min-h-9 rounded-full border border-paper-line bg-paper-soft px-3 text-xs font-black text-ink",
+            view === "current" ? "max-w-[8.5rem]" : "w-full"
+          )}
           aria-label={t.form.category}
         >
           <option value="all">{t.filters.all}</option>
@@ -97,7 +143,16 @@ export function FridgePage(): JSX.Element {
             />
           ))
         ) : (
-          <EmptyState title={t.empty.fridge} character="broccoli" />
+          <EmptyState
+            title={
+              view === "current"
+                ? t.empty.fridge
+                : view === "frozen"
+                  ? t.fridge.emptyFrozen
+                  : t.fridge.emptyHistory
+            }
+            character={view === "frozen" ? "eggplant" : "broccoli"}
+          />
         )}
       </section>
 
@@ -110,6 +165,7 @@ export function FridgePage(): JSX.Element {
           onUsePart={actions.usePart}
           onUseAll={actions.markEaten}
           onFreeze={actions.markFrozen}
+          onThaw={actions.restoreFrozen}
           onLater={actions.snoozeUntilTomorrow}
           onDiscard={actions.markDiscarded}
           onEdit={setEditing}

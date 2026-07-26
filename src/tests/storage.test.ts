@@ -52,7 +52,7 @@ describe("storage", () => {
 
     const migrated = migrateState(oldState);
 
-    expect(migrated.schemaVersion).toBe("1.5.0");
+    expect(migrated.schemaVersion).toBe("1.6.0");
     expect(migrated.foods).toHaveLength(1);
     expect(migrated.foods[0].source).toBe("import");
     expect(migrated.preferences.recipe.cuisine).toBe("auto");
@@ -172,6 +172,49 @@ describe("storage", () => {
       foodId: "tomato",
       estimatedAmount: 2,
       estimatedUnit: "item"
+    });
+  });
+
+  it("preserves a valid V0.11 cooked-recipe record during migration", () => {
+    const migrated = migrateState({
+      appId: "eat-first",
+      schemaVersion: "1.5.0",
+      preferences: {},
+      foods: [],
+      recipeHistory: [{
+        id: "history-cooked",
+        createdAt: "2026-07-22T12:00:00.000Z",
+        locale: "en-GB",
+        cuisine: "auto",
+        servings: 1,
+        maxMinutes: 30,
+        cookingGoal: "auto",
+        recipes: [{
+          title: "Tomato toast",
+          summary: "Quick lunch",
+          whyThisOption: "Uses the tomato",
+          totalMinutes: 10,
+          differenceTags: ["fastest"],
+          ingredients: ["Tomato", "Bread"],
+          steps: ["Toast and top"],
+          equipment: ["toaster"],
+          missingIngredients: [],
+          usesFoods: [{ foodId: "tomato", estimatedAmount: 1, estimatedUnit: "item" }]
+        }],
+        cooked: {
+          recipeIndex: 0,
+          cookedAt: "2026-07-22T12:30:00.000Z",
+          transactionId: "cook-1",
+          uses: [{ foodId: "tomato", outcome: "part", remainingAmount: 1 }]
+        }
+      }]
+    });
+
+    expect(migrated.recipeHistory[0].cooked).toEqual({
+      recipeIndex: 0,
+      cookedAt: "2026-07-22T12:30:00.000Z",
+      transactionId: "cook-1",
+      uses: [{ foodId: "tomato", outcome: "part", remainingAmount: 1 }]
     });
   });
 

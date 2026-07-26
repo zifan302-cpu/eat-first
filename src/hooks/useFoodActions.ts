@@ -2,6 +2,7 @@ import { addDays } from "date-fns";
 import { useMemo } from "react";
 import type {
   FoodActionRecord,
+  FoodActionContext,
   FoodActionType,
   FoodCategory,
   FoodItem,
@@ -39,6 +40,7 @@ export interface UseFoodActions {
   markEaten(id: string): void;
   markFrozen(id: string): void;
   markDiscarded(id: string): void;
+  restoreFrozen(id: string): void;
   usePart(id: string, remainingAmount?: number, remainingText?: string): void;
   snoozeUntilTomorrow(id: string): void;
 }
@@ -50,12 +52,18 @@ function actionId(type: FoodActionType, now: Date): string {
   return `${type}-${now.getTime()}-${Math.random().toString(36).slice(2)}`;
 }
 
-function action(type: FoodActionType, now: Date, note?: string): FoodActionRecord {
+function action(
+  type: FoodActionType,
+  now: Date,
+  note?: string,
+  context?: FoodActionContext
+): FoodActionRecord {
   return {
     id: actionId(type, now),
     type,
     at: isoNow(now),
-    note
+    note,
+    ...context
   };
 }
 
@@ -124,7 +132,8 @@ function markFoodStatus(
   foods: FoodItem[],
   id: string,
   type: Extract<FoodActionType, "eaten" | "frozen" | "discarded">,
-  now = new Date()
+  now = new Date(),
+  context?: FoodActionContext
 ): FoodItem[] {
   return foods.map((food) => {
     if (food.id !== id) {
@@ -139,21 +148,54 @@ function markFoodStatus(
       frozenAt: type === "frozen" ? at : food.frozenAt,
       discardedAt: type === "discarded" ? at : food.discardedAt,
       updatedAt: at,
-      actionHistory: [...food.actionHistory, action(type, now)]
+      actionHistory: [...food.actionHistory, action(type, now, undefined, context)]
     };
   });
 }
 
-export function markFoodEaten(foods: FoodItem[], id: string, now = new Date()): FoodItem[] {
-  return markFoodStatus(foods, id, "eaten", now);
+export function markFoodEaten(
+  foods: FoodItem[],
+  id: string,
+  now = new Date(),
+  context?: FoodActionContext
+): FoodItem[] {
+  return markFoodStatus(foods, id, "eaten", now, context);
 }
 
-export function markFoodFrozen(foods: FoodItem[], id: string, now = new Date()): FoodItem[] {
-  return markFoodStatus(foods, id, "frozen", now);
+export function markFoodFrozen(
+  foods: FoodItem[],
+  id: string,
+  now = new Date(),
+  context?: FoodActionContext
+): FoodItem[] {
+  return markFoodStatus(foods, id, "frozen", now, context);
 }
 
-export function markFoodDiscarded(foods: FoodItem[], id: string, now = new Date()): FoodItem[] {
-  return markFoodStatus(foods, id, "discarded", now);
+export function markFoodDiscarded(
+  foods: FoodItem[],
+  id: string,
+  now = new Date(),
+  context?: FoodActionContext
+): FoodItem[] {
+  return markFoodStatus(foods, id, "discarded", now, context);
+}
+
+export function restoreFrozenFood(
+  foods: FoodItem[],
+  id: string,
+  now = new Date()
+): FoodItem[] {
+  return foods.map((food) => {
+    if (food.id !== id || food.status !== "frozen") return food;
+    const at = isoNow(now);
+    return {
+      ...food,
+      status: "active",
+      snoozedUntil: undefined,
+      updatedAt: at,
+      actionHistory: [...food.actionHistory, action("restored", now)]
+    };
+  });
 }
 
 export function useFoodPart(
@@ -161,16 +203,36 @@ export function useFoodPart(
   id: string,
   remainingAmount?: number,
   remainingText?: string,
-  now = new Date()
+  now = new Date(),
+  context?: FoodActionContext
 ): FoodItem[] {
+  if (typeof remainingAmount === "number" && !Number.isFinite(remainingAmount)) {
+    return foods;
+  }
+
   if (typeof remainingAmount === "number" && remainingAmount <= 0) {
-    return markFoodStatus(foods, id, "eaten", now);
+    return markFoodStatus(foods, id, "eaten", now, context);
   }
 
   return foods.map((food) => {
     if (food.id !== id) return food;
+    if (
+      typeof food.quantityAmount === "number" &&
+      (typeof remainingAmount !== "number" ||
+        remainingAmount > food.quantityAmount ||
+        remainingAmount === food.quantityAmount)
+    ) {
+      return food;
+    }
     const at = isoNow(now);
     const nextText = remainingText?.trim();
+    if (
+      typeof food.quantityAmount !== "number" &&
+      !nextText &&
+      !context?.recipeHistoryId
+    ) {
+      return food;
+    }
     return {
       ...food,
       quantityAmount:
@@ -188,7 +250,8 @@ export function useFoodPart(
             ? `remaining:${remainingAmount}:${food.quantityUnit ?? "item"}`
             : nextText
               ? `remaining:${nextText}`
-              : undefined
+              : undefined,
+          context
         )
       ]
     };
@@ -269,6 +332,15 @@ export function useFoodActions(): UseFoodActions {
             foods: markFoodDiscarded(current.foods, id)
           }),
           { action: "discarded", name: stateFoodName(id) }
+        );
+      },
+      restoreFrozen(id) {
+        commitState(
+          (current) => ({
+            ...current,
+            foods: restoreFrozenFood(current.foods, id)
+          }),
+          { action: "restored", name: stateFoodName(id) }
         );
       },
       usePart(id, remainingAmount, remainingText) {

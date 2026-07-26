@@ -61,6 +61,9 @@ const makeFood = (id, name, category, dateLabelType, labelDate, quantityAmount, 
   ...(labelDate ? { labelDate } : {}),
   ...(quantityAmount ? { quantityAmount, quantityUnit } : {}),
   status,
+  ...(status === "frozen" ? { frozenAt: at } : {}),
+  ...(status === "eaten" ? { consumedAt: at } : {}),
+  ...(status === "discarded" ? { discardedAt: at } : {}),
   source: "manual",
   createdAt: at,
   updatedAt: at,
@@ -68,7 +71,7 @@ const makeFood = (id, name, category, dateLabelType, labelDate, quantityAmount, 
 });
 
 const sampleState = {
-  schemaVersion: "1.5.0",
+  schemaVersion: "1.6.0",
   appId: "eat-first",
   preferences: {
     locale: "zh-CN",
@@ -128,6 +131,12 @@ const sampleState = {
     makeFood("bread", "全麦面包", "bakery", "best_before", date(1), 1, "pack"),
     makeFood("saved", "昨天的胡萝卜", "vegetable", "best_before", date(-1), 1, "item", "eaten", [
       { id: "saved-eaten", type: "eaten", at }
+    ]),
+    makeFood("frozen-peas", "冷冻豌豆", "frozen_food", "best_before", date(30), 2, "portion", "frozen", [
+      { id: "frozen-peas-action", type: "frozen", at }
+    ]),
+    makeFood("discarded-salad", "沙拉叶", "salad", "use_by", date(-1), 1, "pack", "discarded", [
+      { id: "discarded-salad-action", type: "discarded", at }
     ])
   ],
   recipeHistory: [{
@@ -194,7 +203,7 @@ async function capture(name) {
   });
   const outputDir = resolve("output/playwright");
   await mkdir(outputDir, { recursive: true });
-  const output = join(outputDir, `eat-first-v010-${name}.png`);
+  const output = join(outputDir, `eat-first-v011-${name}.png`);
   await writeFile(output, Buffer.from(result.data, "base64"));
   console.log(output);
 }
@@ -255,6 +264,11 @@ for (const [name, hash] of [
     await evaluate("Array.from(document.querySelectorAll('h3')).find((heading) => heading.textContent?.includes('\u4e4b\u524d\u4fdd\u5b58'))?.scrollIntoView({ block: 'start' })");
     await delay(200);
     await capture("recipe-history-result-430x900");
+    await evaluate("Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.includes('\u6211\u505a\u4e86\u8fd9\u9053\u83dc'))?.click()");
+    await delay(250);
+    await capture("recipe-cooked-sheet-430x900");
+    await evaluate("document.querySelector('[aria-labelledby=\"recipe-cooked-title\"] button[aria-label]')?.click()");
+    await delay(150);
     await reload();
     await evaluate("Array.from(document.querySelectorAll('summary')).find((summary) => summary.textContent?.includes('\u8c03\u6574\u98df\u6750\u8303\u56f4'))?.click()");
     await delay(250);
@@ -271,6 +285,19 @@ for (const [name, hash] of [
     await evaluate("Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.includes('用了一些'))?.click()");
     await delay(250);
     await capture("fridge-partial-430x900");
+    await evaluate("document.querySelector('[aria-labelledby=\"food-action-title\"] button[aria-label]')?.click()");
+    await delay(150);
+    await evaluate("Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.includes('\u51b7\u51bb\u533a'))?.click()");
+    await delay(250);
+    await capture("fridge-frozen-430x900");
+    await evaluate("document.querySelector('section.space-y-2 article button')?.click()");
+    await delay(250);
+    await capture("fridge-frozen-actions-430x900");
+    await evaluate("document.querySelector('[aria-labelledby=\"food-action-title\"] button[aria-label]')?.click()");
+    await delay(150);
+    await evaluate("Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.includes('\u5904\u7406\u8bb0\u5f55'))?.click()");
+    await delay(250);
+    await capture("fridge-history-430x900");
   }
   if (name === "settings-430x900") {
     const equipmentDisclosure = await evaluate(`(() => {
