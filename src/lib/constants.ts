@@ -8,7 +8,8 @@ import type {
 } from "../types/food";
 
 export const STORAGE_KEY = "eat-first:v1:state";
-export const SCHEMA_VERSION = "1.6.0";
+export const SCHEMA_VERSION = "1.7.0";
+export const FEEDBACK_DRAFT_KEY = "eat-first:v1:feedback-draft";
 export const APP_ID = "eat-first";
 
 export const DATE_LABEL_TYPES: DateLabelType[] = [

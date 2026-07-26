@@ -10,10 +10,7 @@ interface CompactFoodCardProps {
   food: FoodItem;
   rank: number;
   t: Messages;
-  onEat(id: string): void;
-  onFreeze(id: string): void;
-  onLater(id: string): void;
-  onDiscard(id: string): void;
+  onAction(food: FoodItem, action: PrimaryCta): void;
 }
 
 const actionIcons: Record<PrimaryCta, typeof Check> = {
@@ -24,7 +21,16 @@ const actionIcons: Record<PrimaryCta, typeof Check> = {
   later: Clock
 };
 
-function compactActions(priority: PriorityResult): [PrimaryCta, PrimaryCta] {
+export function getCompactFoodActions(priority: PriorityResult): [PrimaryCta, PrimaryCta] {
+  if (
+    priority.explanationKey === "priority.plannedToday" ||
+    priority.explanationKey === "priority.plannedTomorrow"
+  ) {
+    const secondary =
+      priority.secondaryCtas.find((action) => action !== priority.primaryCta) ??
+      (priority.primaryCta === "check" ? "eat" : "later");
+    return [priority.primaryCta, secondary];
+  }
   if (priority.verdict === "expired_use_by") return ["discard", "later"];
   if (priority.verdict === "use_today") return ["eat", "freeze"];
   if (priority.verdict === "use_soon") {
@@ -45,23 +51,12 @@ export function CompactFoodCard({
   food,
   rank,
   t,
-  onEat,
-  onFreeze,
-  onLater,
-  onDiscard
+  onAction
 }: CompactFoodCardProps): JSX.Element {
   const priority = getPriority(food);
-  const [primary, secondary] = compactActions(priority);
+  const [primary, secondary] = getCompactFoodActions(priority);
   const explanation =
     t.priority[priority.explanationKey.split(".")[1] as keyof typeof t.priority];
-
-  const handlers: Record<PrimaryCta, () => void> = {
-    eat: () => onEat(food.id),
-    freeze: () => onFreeze(food.id),
-    check: () => window.alert(explanation),
-    discard: () => onDiscard(food.id),
-    later: () => onLater(food.id)
-  };
 
   return (
     <article className="fresh-card animate-fresh-pop overflow-hidden p-3.5">
@@ -91,7 +86,7 @@ export function CompactFoodCard({
             <button
               key={`${action}-${index}`}
               type="button"
-              onClick={handlers[action]}
+              onClick={() => onAction(food, action)}
               className={cx(
                 "flex min-h-11 items-center justify-center gap-2 rounded-[0.9rem] border px-3 text-sm font-extrabold transition active:translate-y-px",
                 index === 0

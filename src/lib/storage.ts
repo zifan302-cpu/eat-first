@@ -38,6 +38,7 @@ export function isImportableState(input: unknown): boolean {
     isObject(input) &&
     input.appId === APP_ID &&
     (input.schemaVersion === SCHEMA_VERSION ||
+      input.schemaVersion === "1.6.0" ||
       input.schemaVersion === "1.5.0" ||
       input.schemaVersion === "1.4.0" ||
       input.schemaVersion === "1.3.0" ||
@@ -94,6 +95,18 @@ function defaultRecipePreferences(): UserPreferences["recipe"] {
     pantryPolicy: "everyday",
     pantryStaples: booleanRecord(PANTRY_STAPLES, ["cooking_oil", "salt"]),
     customPantryStaples: []
+  };
+}
+
+function normalizeHabitPreferences(input: unknown): UserPreferences["habit"] {
+  const value = isObject(input) ? input : {};
+  const reminderTime =
+    typeof value.reminderTime === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value.reminderTime)
+      ? value.reminderTime
+      : "18:00";
+  return {
+    reminderEnabled: value.reminderEnabled === true,
+    reminderTime
   };
 }
 
@@ -184,8 +197,23 @@ function normalizeFoods(input: unknown): FoodItem[] {
       typeof item.quantityUnit === "string"
         ? (item.quantityUnit as FoodItem["quantityUnit"])
         : parsedQuantity.unit;
+    const plannedUseDate =
+      typeof item.plannedUseDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(item.plannedUseDate)
+        ? item.plannedUseDate
+        : undefined;
+    const thawedAt =
+      typeof item.thawedAt === "string" && !Number.isNaN(new Date(item.thawedAt).getTime())
+        ? new Date(item.thawedAt).toISOString()
+        : undefined;
 
-    return [{ ...item, source, quantityAmount, quantityUnit } as FoodItem];
+    return [{
+      ...item,
+      source,
+      quantityAmount,
+      quantityUnit,
+      ...(plannedUseDate ? { plannedUseDate } : {}),
+      ...(thawedAt ? { thawedAt } : {})
+    } as FoodItem];
   });
 }
 
@@ -334,6 +362,7 @@ export function createDefaultState(now = new Date()): AppStateEnvelope {
       topN: 3,
       showSafetyBanner: true,
       hasSeenOnboarding: false,
+      habit: normalizeHabitPreferences(undefined),
       recipe: defaultRecipePreferences()
     },
     foods: [],
@@ -366,6 +395,7 @@ export function migrateState(input: unknown): AppStateEnvelope {
       topN: typeof preferences.topN === "number" ? preferences.topN : 3,
       showSafetyBanner: preferences.showSafetyBanner !== false,
       hasSeenOnboarding: preferences.hasSeenOnboarding === true,
+      habit: normalizeHabitPreferences(preferences.habit),
       recipe: normalizeRecipePreferences(preferences.recipe)
     },
     foods,

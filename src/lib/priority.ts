@@ -12,7 +12,7 @@ function result(
   return { score, verdict, primaryCta, secondaryCtas, explanationKey };
 }
 
-export function getPriority(item: FoodItem, today = new Date()): PriorityResult {
+function getLabelPriority(item: FoodItem, today: Date): PriorityResult {
   if (item.dateLabelType === "none") {
     return result(5, "no_date", "later", ["check"], "priority.noDate");
   }
@@ -66,6 +66,31 @@ export function getPriority(item: FoodItem, today = new Date()): PriorityResult 
   }
 
   return result(5, "no_date", "later", ["check"], "priority.noDate");
+}
+
+export function getPriority(item: FoodItem, today = new Date()): PriorityResult {
+  const labelPriority = getLabelPriority(item, today);
+  if (labelPriority.verdict === "expired_use_by") return labelPriority;
+
+  const plannedDays = daysFromToday(item.plannedUseDate, today);
+  if (typeof plannedDays !== "number") return labelPriority;
+  if (plannedDays <= 0) {
+    return {
+      ...labelPriority,
+      score: Math.max(92, labelPriority.score),
+      primaryCta: labelPriority.primaryCta === "later" ? "check" : labelPriority.primaryCta,
+      explanationKey: "priority.plannedToday"
+    };
+  }
+  if (plannedDays === 1) {
+    return {
+      ...labelPriority,
+      score: Math.max(76, labelPriority.score),
+      primaryCta: labelPriority.primaryCta === "later" ? "check" : labelPriority.primaryCta,
+      explanationKey: "priority.plannedTomorrow"
+    };
+  }
+  return labelPriority;
 }
 
 export function getActiveFoods(foods: FoodItem[]): FoodItem[] {

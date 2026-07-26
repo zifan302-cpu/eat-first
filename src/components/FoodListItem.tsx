@@ -24,9 +24,20 @@ function compactDate(food: FoodItem, t: Messages): string {
   return food.labelDate;
 }
 
+function plannedUseLabel(food: FoodItem, locale: LocaleCode, t: Messages): string | null {
+  if (!food.plannedUseDate) return null;
+  const date = new Date(`${food.plannedUseDate}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return null;
+  return t.fridge.plannedUseDate.replace(
+    "{date}",
+    date.toLocaleDateString(locale, { day: "numeric", month: "short" })
+  );
+}
+
 export function FoodListItem({ food, locale, t, onOpen }: FoodListItemProps): JSX.Element {
   const priority = getPriority(food);
   const amount = quantityLabel(food, locale);
+  const plannedUse = plannedUseLabel(food, locale, t);
   const statusAt =
     food.status === "frozen"
       ? food.frozenAt
@@ -56,7 +67,9 @@ export function FoodListItem({ food, locale, t, onOpen }: FoodListItemProps): JS
           </span>
           <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-ink-muted">
             {amount ? <span className="font-extrabold text-ink">{amount}</span> : null}
-            {food.status === "active" ? (
+            {food.status === "active" && plannedUse ? (
+              <span className="font-extrabold text-leaf-700">{plannedUse}</span>
+            ) : food.status === "active" ? (
               <span>{t.dateTypes[food.dateLabelType]} · {compactDate(food, t)}</span>
             ) : statusAt ? (
               <span>{new Date(statusAt).toLocaleDateString(locale)}</span>

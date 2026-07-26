@@ -1,19 +1,34 @@
-import { Clock, History, Pencil, RotateCcw, Snowflake, Trash2, X } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarDays,
+  Clock,
+  History,
+  Pencil,
+  RotateCcw,
+  Search,
+  Snowflake,
+  Trash2,
+  X
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Messages } from "../i18n/en-GB";
 import type { FoodItem, LocaleCode } from "../types/food";
+import { addCalendarDays, toDateInputValue } from "../lib/dates";
 import { quantityLabel } from "../lib/quantity";
 import { FoodPortrait } from "./FoodPortrait";
+
+type ActionPanel = "actions" | "partial" | "freeze" | "quality" | "thaw";
 
 interface FoodActionSheetProps {
   food: FoodItem;
   locale: LocaleCode;
   t: Messages;
+  initialPanel?: Extract<ActionPanel, "actions" | "freeze" | "quality">;
   onClose(): void;
   onUsePart(id: string, remainingAmount?: number, remainingText?: string): void;
   onUseAll(id: string): void;
   onFreeze(id: string): void;
-  onThaw(id: string): void;
+  onThaw(id: string, plannedUseDate: string): void;
   onLater(id: string): void;
   onDiscard(id: string): void;
   onEdit(food: FoodItem): void;
@@ -24,6 +39,7 @@ export function FoodActionSheet({
   food,
   locale,
   t,
+  initialPanel = "actions",
   onClose,
   onUsePart,
   onUseAll,
@@ -34,10 +50,10 @@ export function FoodActionSheet({
   onEdit,
   onDelete
 }: FoodActionSheetProps): JSX.Element {
-  const [showPartial, setShowPartial] = useState(false);
-  const [showFreezeAdvice, setShowFreezeAdvice] = useState(false);
+  const [panel, setPanel] = useState<ActionPanel>(initialPanel);
   const [remainingAmount, setRemainingAmount] = useState(food.quantityAmount?.toString() ?? "");
   const [remainingText, setRemainingText] = useState(food.quantityText ?? "");
+  const [plannedUseDate, setPlannedUseDate] = useState(() => toDateInputValue(new Date()));
   const currentLabel = quantityLabel(food, locale);
   const numericRemaining = Number(remainingAmount);
   const partialIsInvalid =
@@ -66,6 +82,19 @@ export function FoodActionSheet({
     onClose();
   }
 
+  function panelBackButton() {
+    return (
+      <button
+        type="button"
+        onClick={() => setPanel("actions")}
+        className="mb-3 inline-flex min-h-9 items-center gap-1 text-xs font-black text-leaf-700"
+      >
+        <ArrowLeft className="h-4 w-4" aria-hidden />
+        {t.actions.back}
+      </button>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-end bg-ink/38 p-3 sm:items-center sm:justify-center" role="presentation" onMouseDown={onClose}>
       <section
@@ -86,8 +115,9 @@ export function FoodActionSheet({
           </button>
         </header>
 
-        {showPartial && food.status === "active" ? (
+        {panel === "partial" && food.status === "active" ? (
           <div className="mt-4 rounded-[1.1rem] border border-leaf-500/25 bg-leaf-50 p-4">
+            {panelBackButton()}
             <h3 className="font-editorial text-lg font-black text-ink">{t.fridge.useSomeTitle}</h3>
             <p className="mt-1 text-sm font-medium leading-5 text-ink-muted">{t.fridge.useSomeBody}</p>
             {typeof food.quantityAmount === "number" ? (
@@ -130,27 +160,111 @@ export function FoodActionSheet({
               <p className="mt-2 text-xs font-bold text-tomato">{t.recipe.invalidRemaining}</p>
             ) : null}
           </div>
-        ) : showFreezeAdvice && food.status === "active" ? (
+        ) : panel === "freeze" && food.status === "active" ? (
           <div className="mt-4 rounded-[1.1rem] border border-freezer/25 bg-[#E8EFF0] p-4">
+            {panelBackButton()}
             <h3 className="font-editorial text-lg font-black text-ink">{t.fridge.freezeTitle}</h3>
             <p className="mt-1 text-sm font-medium leading-5 text-ink-muted">{t.fridge.freezeBody}</p>
             <p className="mt-3 text-xs font-black text-ink">{t.fridge.freezeTipsTitle}</p>
             <ul className="mt-2 list-disc space-y-1.5 pl-5 text-xs font-semibold leading-5 text-ink-muted">
               {t.fridge.freezeTips.map((tip) => <li key={tip}>{tip}</li>)}
             </ul>
+            <button
+              type="button"
+              onClick={() => finish(() => onFreeze(food.id))}
+              className="fresh-button-primary mt-4 w-full"
+            >
+              <Snowflake aria-hidden className="mr-2 inline h-4 w-4" />
+              {t.fridge.confirmFreeze}
+            </button>
+          </div>
+        ) : panel === "quality" && food.status === "active" ? (
+          <div className="mt-4 rounded-[1.1rem] border border-carrot/25 bg-[#F7E9D5] p-4">
+            {panelBackButton()}
+            <div className="flex items-center gap-2">
+              <Search className="h-5 w-5 text-carrot" aria-hidden />
+              <h3 className="font-editorial text-lg font-black text-ink">
+                {t.fridge.qualityCheckTitle}
+              </h3>
+            </div>
+            <p className="mt-2 text-sm font-medium leading-5 text-ink-muted">
+              {t.fridge.qualityCheckBody}
+            </p>
+            <ul className="mt-3 list-disc space-y-1.5 pl-5 text-xs font-semibold leading-5 text-ink-muted">
+              {t.fridge.qualityCheckTips.map((tip) => <li key={tip}>{tip}</li>)}
+            </ul>
             <div className="mt-4 grid grid-cols-2 gap-2">
-              <button type="button" onClick={() => setShowFreezeAdvice(false)} className="fresh-button-secondary">
-                {t.actions.cancel}
+              <button type="button" onClick={() => setPanel("partial")} className="fresh-button-primary">
+                {t.actions.useSome}
               </button>
-              <button
-                type="button"
-                onClick={() => finish(() => onFreeze(food.id))}
-                className="fresh-button-primary"
-              >
+              <button type="button" onClick={() => finish(() => onUseAll(food.id))} className="fresh-button-secondary">
+                {t.actions.useAll}
+              </button>
+              <button type="button" onClick={() => setPanel("freeze")} className="fresh-button-secondary">
                 <Snowflake aria-hidden className="mr-2 inline h-4 w-4" />
-                {t.fridge.confirmFreeze}
+                {t.actions.freeze}
+              </button>
+              <button type="button" onClick={() => finish(() => onDiscard(food.id))} className="fresh-button-secondary">
+                <Trash2 aria-hidden className="mr-2 inline h-4 w-4" />
+                {t.actions.discard}
               </button>
             </div>
+          </div>
+        ) : panel === "thaw" && food.status === "frozen" ? (
+          <div className="mt-4 rounded-[1.1rem] border border-freezer/25 bg-[#E8EFF0] p-4">
+            {panelBackButton()}
+            <div className="flex items-center gap-2">
+              <CalendarDays className="h-5 w-5 text-leaf-700" aria-hidden />
+              <h3 className="font-editorial text-lg font-black text-ink">
+                {t.fridge.thawPlanTitle}
+              </h3>
+            </div>
+            <p className="mt-2 text-sm font-medium leading-5 text-ink-muted">
+              {t.fridge.thawPlanBody}
+            </p>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {[
+                [toDateInputValue(new Date()), t.form.today],
+                [toDateInputValue(addCalendarDays(new Date(), 1)), t.form.tomorrow]
+              ].map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setPlannedUseDate(value)}
+                  className={
+                    plannedUseDate === value
+                      ? "fresh-button-primary"
+                      : "fresh-button-secondary"
+                  }
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <label className="mt-3 block">
+              <span className="mb-1.5 block text-xs font-black text-ink">
+                {t.fridge.customPlanDate}
+              </span>
+              <input
+                type="date"
+                min={toDateInputValue(new Date())}
+                value={plannedUseDate}
+                onChange={(event) => setPlannedUseDate(event.target.value)}
+                className="fresh-field"
+              />
+            </label>
+            <p className="mt-2 text-xs font-semibold leading-5 text-ink-muted">
+              {t.fridge.thawPlanSafety}
+            </p>
+            <button
+              type="button"
+              disabled={!plannedUseDate}
+              onClick={() => finish(() => onThaw(food.id, plannedUseDate))}
+              className="fresh-button-primary mt-4 w-full disabled:opacity-50"
+            >
+              <RotateCcw aria-hidden className="mr-2 inline h-4 w-4" />
+              {t.fridge.confirmThawPlan}
+            </button>
           </div>
         ) : food.status === "frozen" ? (
           <div className="mt-4 rounded-[1.1rem] border border-freezer/25 bg-[#E8EFF0] p-4">
@@ -161,7 +275,7 @@ export function FoodActionSheet({
               {t.fridge.thawTips.map((tip) => <li key={tip}>{tip}</li>)}
             </ul>
             <div className="mt-4 grid grid-cols-2 gap-2">
-              <button type="button" onClick={() => finish(() => onThaw(food.id))} className="fresh-button-primary">
+              <button type="button" onClick={() => setPanel("thaw")} className="fresh-button-primary">
                 <RotateCcw aria-hidden className="mr-2 inline h-4 w-4" />
                 {t.actions.thaw}
               </button>
@@ -180,9 +294,9 @@ export function FoodActionSheet({
           </div>
         ) : food.status === "active" ? (
           <div className="mt-4 grid grid-cols-2 gap-2">
-            <button type="button" onClick={() => setShowPartial(true)} className="fresh-button-primary">{t.actions.useSome}</button>
+            <button type="button" onClick={() => setPanel("partial")} className="fresh-button-primary">{t.actions.useSome}</button>
             <button type="button" onClick={() => finish(() => onUseAll(food.id))} className="fresh-button-secondary">{t.actions.useAll}</button>
-            <button type="button" onClick={() => setShowFreezeAdvice(true)} className="fresh-button-secondary"><Snowflake aria-hidden className="mr-2 inline h-4 w-4" />{t.actions.freeze}</button>
+            <button type="button" onClick={() => setPanel("freeze")} className="fresh-button-secondary"><Snowflake aria-hidden className="mr-2 inline h-4 w-4" />{t.actions.freeze}</button>
             <button type="button" onClick={() => finish(() => onLater(food.id))} className="fresh-button-secondary"><Clock aria-hidden className="mr-2 inline h-4 w-4" />{t.actions.later}</button>
             <button type="button" onClick={() => finish(() => onEdit(food))} className="fresh-button-secondary"><Pencil aria-hidden className="mr-2 inline h-4 w-4" />{t.actions.edit}</button>
             <button type="button" onClick={() => finish(() => onDiscard(food.id))} className="fresh-button-secondary"><Trash2 aria-hidden className="mr-2 inline h-4 w-4" />{t.actions.discard}</button>

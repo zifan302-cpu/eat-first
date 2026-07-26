@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { getCompactFoodActions } from "../components/CompactFoodCard";
 import {
   createFoodFromInput,
   markFoodEaten,
@@ -104,9 +105,36 @@ describe("priority rules", () => {
   it("restores a frozen item to the active fridge and records the transition", () => {
     const item = food("Peas", "best_before", 4);
     const frozen = markFoodFrozen([item], item.id, today)[0];
-    const restored = restoreFrozenFood([frozen], item.id, today)[0];
+    const plannedUseDate = toDateInputValue(addCalendarDays(today, 1));
+    const restored = restoreFrozenFood([frozen], item.id, plannedUseDate, today)[0];
 
     expect(restored.status).toBe("active");
+    expect(restored.plannedUseDate).toBe(plannedUseDate);
+    expect(restored.thawedAt).toBe(today.toISOString());
     expect(restored.actionHistory.at(-1)?.type).toBe("restored");
+    expect(restored.actionHistory.at(-1)?.note).toBe(`planned-use:${plannedUseDate}`);
+  });
+
+  it("raises a thawed item planned for today without overriding its safety verdict", () => {
+    const planned = {
+      ...food("Peas", "none"),
+      plannedUseDate: toDateInputValue(today)
+    };
+    const expired = {
+      ...food("Fish", "use_by", -1),
+      plannedUseDate: toDateInputValue(today)
+    };
+
+    expect(getPriority(planned, today)).toMatchObject({
+      score: 92,
+      primaryCta: "check",
+      explanationKey: "priority.plannedToday"
+    });
+    expect(getCompactFoodActions(getPriority(planned, today))).toEqual(["check", "eat"]);
+    expect(getPriority(expired, today)).toMatchObject({
+      verdict: "expired_use_by",
+      primaryCta: "discard",
+      explanationKey: "priority.expiredUseBy"
+    });
   });
 });

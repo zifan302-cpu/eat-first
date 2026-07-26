@@ -10,6 +10,7 @@ if (!page) throw new Error(`Local preview ${previewUrl} not found on CDP port ${
 const socket = new WebSocket(page.webSocketDebuggerUrl);
 let nextId = 0;
 const pending = new Map();
+const browserErrors = [];
 
 function send(method, params = {}) {
   return new Promise((resolve, reject) => {
@@ -21,6 +22,18 @@ function send(method, params = {}) {
 
 socket.addEventListener("message", (event) => {
   const message = JSON.parse(event.data);
+  if (message.method === "Runtime.exceptionThrown") {
+    browserErrors.push(message.params?.exceptionDetails?.text ?? "Runtime exception");
+  }
+  if (
+    message.method === "Runtime.consoleAPICalled" &&
+    message.params?.type === "error"
+  ) {
+    browserErrors.push(
+      message.params.args?.map((argument) => argument.value ?? argument.description).join(" ") ??
+        "Console error"
+    );
+  }
   if (!message.id || !pending.has(message.id)) return;
   const handler = pending.get(message.id);
   pending.delete(message.id);
@@ -71,13 +84,17 @@ const makeFood = (id, name, category, dateLabelType, labelDate, quantityAmount, 
 });
 
 const sampleState = {
-  schemaVersion: "1.6.0",
+  schemaVersion: "1.7.0",
   appId: "eat-first",
   preferences: {
     locale: "zh-CN",
     topN: 3,
     showSafetyBanner: true,
     hasSeenOnboarding: true,
+    habit: {
+      reminderEnabled: false,
+      reminderTime: "18:00"
+    },
     recipe: {
       cuisine: "auto",
       defaultServings: 1,
@@ -122,7 +139,11 @@ const sampleState = {
     makeFood("mushroom", "蘑菇", "vegetable", "use_by", date(1), 250, "g"),
     makeFood("broccoli", "西兰花", "vegetable", "best_before", date(-1), 1),
     makeFood("carrot", "胡萝卜", "vegetable", "best_before", date(3), 3),
-    makeFood("eggplant", "茄子", "vegetable", "none", 2),
+    {
+      ...makeFood("eggplant", "茄子", "vegetable", "none", undefined, 2),
+      plannedUseDate: date(0),
+      thawedAt: at
+    },
     makeFood("yogurt", "希腊酸奶", "dairy_eggs", "use_by", date(4), 500, "g"),
     makeFood("noodles", "鸡汤方便面", "dry_goods", "best_before", date(35), 4, "pack"),
     makeFood("soy", "生抽", "condiment", "best_before", date(90), 1, "bottle"),
@@ -203,12 +224,12 @@ async function capture(name) {
   });
   const outputDir = resolve("output/playwright");
   await mkdir(outputDir, { recursive: true });
-  const output = join(outputDir, `eat-first-v011-${name}.png`);
+  const output = join(outputDir, `eat-first-v0111-${name}.png`);
   await writeFile(output, Buffer.from(result.data, "base64"));
   console.log(output);
 }
 
-await evaluate("localStorage.removeItem('eat-first:v1:state'); sessionStorage.removeItem('eat-first:add-food-draft')");
+await evaluate("localStorage.removeItem('eat-first:v1:state'); localStorage.removeItem('eat-first:v1:feedback-draft'); sessionStorage.removeItem('eat-first:add-food-draft')");
 await reload();
 await capture("onboarding-430x900");
 
@@ -238,10 +259,18 @@ for (const [name, hash] of [
   ["fridge-430x900", "#/fridge"],
   ["recipes-430x900", "#/recipes"],
   ["stats-430x900", "#/stats"],
+  ["feedback-430x900", "#/feedback"],
   ["settings-430x900", "#/settings"]
 ]) {
   await evaluate(`location.hash = ${JSON.stringify(hash)}`);
   await delay(750);
+  const pageState = await evaluate(`({
+    hasContent: document.body.innerText.trim().length > 0,
+    hasOverlay: Boolean(document.querySelector('.vite-error-overlay, #webpack-dev-server-client-overlay'))
+  })`);
+  if (!pageState.result.value?.hasContent || pageState.result.value?.hasOverlay) {
+    throw new Error(`Invalid page state on ${name}: ${JSON.stringify(pageState.result.value)}`);
+  }
   await capture(name);
   const navigation = await evaluate(`Array.from(document.querySelectorAll('nav a')).map((link) => ({
     label: link.textContent?.trim(),
@@ -252,6 +281,17 @@ for (const [name, hash] of [
     throw new Error(`Expected five primary navigation links on ${name}: ${JSON.stringify(navigation.result.value)}`);
   }
   console.log(JSON.stringify({ page: name, navigation: navigation.result.value }));
+  if (name === "home-430x900") {
+    const qualityButton = await evaluate(`(() => {
+      const button = Array.from(document.querySelectorAll('button')).find((item) => item.textContent?.trim() === '\u68c0\u67e5');
+      button?.click();
+      return Boolean(button);
+    })()`);
+    if (!qualityButton.result.value) throw new Error("Home quality-check button was not found");
+    await delay(250);
+    await capture("home-quality-check-430x900");
+    await evaluate("document.querySelector('[aria-labelledby=\"food-action-title\"] button[aria-label]')?.click()");
+  }
   if (name === "recipes-430x900") {
     await capture("recipe-setup-430x900");
     await evaluate("Array.from(document.querySelectorAll('summary')).find((summary) => summary.textContent?.includes('\u6700\u8fd1\u751f\u6210\u7684\u83dc\u8c31'))?.click()");
@@ -293,11 +333,46 @@ for (const [name, hash] of [
     await evaluate("document.querySelector('section.space-y-2 article button')?.click()");
     await delay(250);
     await capture("fridge-frozen-actions-430x900");
+    const thawButton = await evaluate(`(() => {
+      const button = Array.from(document.querySelectorAll('button')).find((item) => item.textContent?.includes('\u79fb\u56de\u51b0\u7bb1'));
+      button?.click();
+      return Boolean(button);
+    })()`);
+    if (!thawButton.result.value) throw new Error("Thaw action was not found");
+    await delay(250);
+    await capture("fridge-thaw-plan-430x900");
     await evaluate("document.querySelector('[aria-labelledby=\"food-action-title\"] button[aria-label]')?.click()");
     await delay(150);
     await evaluate("Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.includes('\u5904\u7406\u8bb0\u5f55'))?.click()");
     await delay(250);
     await capture("fridge-history-430x900");
+  }
+  if (name === "feedback-430x900") {
+    const feedbackReady = await evaluate(`(() => {
+      const rating = Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.trim() === '4');
+      const intent = Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.trim() === '\u613f\u610f');
+      rating?.click();
+      intent?.click();
+      return Boolean(rating && intent);
+    })()`);
+    if (!feedbackReady.result.value) throw new Error("Feedback controls were not found");
+    await delay(200);
+    const generated = await evaluate(`(() => {
+      const button = Array.from(document.querySelectorAll('button')).find((item) => item.textContent?.includes('\u751f\u6210\u6458\u8981'));
+      button?.click();
+      return Boolean(button && !button.disabled);
+    })()`);
+    if (!generated.result.value) throw new Error("Feedback summary button was not ready");
+    await delay(300);
+    const summaryVisible = await evaluate("Boolean(document.querySelector('textarea[readonly]')?.value.includes('Eat First'))");
+    if (!summaryVisible.result.value) throw new Error("Feedback summary was not generated");
+    await evaluate("Array.from(document.querySelectorAll('h2')).find((heading) => heading.textContent?.includes('\u751f\u6210\u53cd\u9988\u6458\u8981'))?.scrollIntoView({ block: 'start' })");
+    await delay(200);
+    await capture("feedback-summary-430x900");
+    const feedbackDraft = await evaluate("localStorage.getItem('eat-first:v1:feedback-draft')");
+    if (!feedbackDraft.result.value?.includes('"helpful":4')) {
+      throw new Error("Feedback draft was not persisted");
+    }
   }
   if (name === "settings-430x900") {
     const equipmentDisclosure = await evaluate(`(() => {
@@ -338,6 +413,15 @@ for (const [name, hash] of [
     })()`);
     await delay(250);
     await capture("settings-custom-pantry-430x900");
+    const habitDisclosure = await evaluate(`(() => {
+      const summary = Array.from(document.querySelectorAll('summary')).find((item) => item.textContent?.includes('\u6bcf\u65e5\u51b0\u7bb1\u56de\u8bbf'));
+      summary?.scrollIntoView({ block: 'start' });
+      summary?.click();
+      return Boolean(summary);
+    })()`);
+    if (!habitDisclosure.result.value) throw new Error("Habit disclosure was not found");
+    await delay(300);
+    await capture("settings-habit-430x900");
   }
 }
 
@@ -358,5 +442,9 @@ if (recoveredDraft !== "\u8349\u7a3f\u6062\u590d\u756a\u8304") {
 }
 await capture("add-draft-recovered-430x900");
 console.log(JSON.stringify({ draftRecovery: "passed", recoveredDraft }));
+
+if (browserErrors.length > 0) {
+  throw new Error(`Browser errors detected: ${JSON.stringify(browserErrors)}`);
+}
 
 socket.close();

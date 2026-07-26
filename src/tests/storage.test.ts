@@ -52,7 +52,7 @@ describe("storage", () => {
 
     const migrated = migrateState(oldState);
 
-    expect(migrated.schemaVersion).toBe("1.6.0");
+    expect(migrated.schemaVersion).toBe("1.7.0");
     expect(migrated.foods).toHaveLength(1);
     expect(migrated.foods[0].source).toBe("import");
     expect(migrated.preferences.recipe.cuisine).toBe("auto");
@@ -62,7 +62,54 @@ describe("storage", () => {
     expect(migrated.preferences.recipe.pantryStaples.salt).toBe(true);
     expect(migrated.preferences.recipe.customEquipment).toEqual([]);
     expect(migrated.preferences.recipe.customPantryStaples).toEqual([]);
+    expect(migrated.preferences.habit).toEqual({
+      reminderEnabled: false,
+      reminderTime: "18:00"
+    });
     expect(migrated.recipeHistory).toEqual([]);
+  });
+
+  it("migrates V0.11 reminder and thaw-plan data into the daily-use schema", () => {
+    const migrated = migrateState({
+      appId: "eat-first",
+      schemaVersion: "1.6.0",
+      preferences: {
+        locale: "en-GB",
+        habit: {
+          reminderEnabled: true,
+          reminderTime: "25:90"
+        }
+      },
+      foods: [{
+        id: "thawed-food",
+        name: "Peas",
+        normalizedName: "peas",
+        category: "vegetable",
+        dateLabelType: "none",
+        status: "active",
+        source: "manual",
+        plannedUseDate: "2026-07-27",
+        thawedAt: "2026-07-26T10:00:00.000Z",
+        createdAt: "2026-07-20T10:00:00.000Z",
+        updatedAt: "2026-07-26T10:00:00.000Z",
+        actionHistory: []
+      }],
+      meta: {}
+    });
+
+    expect(isImportableState({
+      appId: "eat-first",
+      schemaVersion: "1.6.0",
+      foods: []
+    })).toBe(true);
+    expect(migrated.preferences.habit).toEqual({
+      reminderEnabled: true,
+      reminderTime: "18:00"
+    });
+    expect(migrated.foods[0]).toMatchObject({
+      plannedUseDate: "2026-07-27",
+      thawedAt: "2026-07-26T10:00:00.000Z"
+    });
   });
 
   it("normalizes and bounds custom kitchen labels", () => {

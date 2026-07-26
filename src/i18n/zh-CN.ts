@@ -5,7 +5,7 @@ export const zhCN: Messages = {
     name: "冰箱小鲜队",
     subtitle: "在食物浪费前，先知道今天该处理什么。",
     valueLine: "一支帮你处理冰箱大事的小队。",
-    version: "V0.11 做饭后回到冰箱"
+    version: "V0.11.1 日常使用与试用反馈"
   },
   nav: {
     home: "首页",
@@ -22,7 +22,8 @@ export const zhCN: Messages = {
     fridgeTitle: "冰箱列表",
     statsTitle: "小队成长",
     squadTitle: "小鲜队住处",
-    settingsTitle: "设置"
+    settingsTitle: "设置",
+    feedbackTitle: "试用反馈"
   },
   actions: {
     eat: "吃掉",
@@ -49,7 +50,8 @@ export const zhCN: Messages = {
     downloadBackup: "下载备份文件",
     restoreBackup: "从文件恢复",
     confirmClear: "确认清空全部数据",
-    cancelGeneration: "取消生成"
+    cancelGeneration: "取消生成",
+    back: "返回"
   },
   form: {
     name: "食物名称",
@@ -138,7 +140,9 @@ export const zhCN: Messages = {
     openedDue: "开封提醒已到。这只是提醒，不是安全保证。",
     openedSoon: "开封提醒快到了。请结合包装说明和食物状态判断。",
     openedNormal: "已记录开封日期，用作本地提醒。",
-    noDate: "没有保存日期。除非没有更紧急食物，一般优先级最低。"
+    noDate: "没有保存日期。除非没有更紧急食物，一般优先级最低。",
+    plannedToday: "解冻后计划今天处理，请把这个决定保持在首页。",
+    plannedTomorrow: "解冻后计划明天处理。"
   },
   empty: {
     top: "冰箱暂时很平静。",
@@ -431,10 +435,34 @@ export const zhCN: Messages = {
       "只解冻准备使用的份量，并保留清楚的标签。",
       "移回当前冰箱后，可以补充日期或备注，方便及时处理。"
     ],
+    thawPlanTitle: "准备哪天处理？",
+    thawPlanBody: "食物离开冷冻区时，需要一个明确的下一步。选好日期后，它会回到首页合适的位置。",
+    customPlanDate: "或者选择其他日期",
+    thawPlanSafety: "这个计划不能替代包装说明和官方食品安全建议，请继续留意原有 Use by 信息。",
+    confirmThawPlan: "按此计划移回冰箱",
+    plannedUseDate: "解冻后计划处理：{date}",
+    qualityCheckTitle: "检查之后，如实记录结果",
+    qualityCheckBody: "对于 Best before 或没有日期的食物，请结合标签与实际状态，选择你最后做了什么。",
+    qualityCheckTips: [
+      "Best before 通常表示品质，Use by 则是食品安全日期。",
+      "不要让本应用替你判断食物是否安全。",
+      "选择真实结果，冰箱信息才会继续准确。"
+    ],
     completedBody: "这项食物会作为本地处理记录保留下来。",
     actionHistory: "最近处理",
     emptyFrozen: "冷冻区现在没有等待处理的食物。",
     emptyHistory: "吃完或丢弃后的记录会出现在这里。"
+  },
+  habit: {
+    eyebrow: "每日回访",
+    title: "今天完成一个真实的冰箱决定",
+    body: "一次小行动就够了：吃掉、冷冻或如实记录结果，然后明天再回来看看。",
+    completeTitle: "今天的冰箱检查已经完成",
+    completeBody: "记录已保存在本机；明天在你选择的时间回来，看看冰箱发生了什么变化。",
+    reminderAt: "已计划每天 {time} 回访",
+    addReminder: "添加提醒",
+    adjustReminder: "调整提醒",
+    feedbackAction: "试用反馈"
   },
   stats: {
     eaten: "已吃掉",
@@ -520,6 +548,15 @@ export const zhCN: Messages = {
     installTitle: "安装到 iPhone",
     installSummary: "添加到主屏幕后，可以像普通应用一样独立打开。",
     installed: "当前已经从主屏幕 Web App 中打开。",
+    habitTitle: "每日冰箱回访",
+    habitSummary: "选择一个时间，把每天回来看一眼的提醒添加到手机或电脑日历。",
+    reminderTime: "每日提醒时间",
+    downloadReminder: "添加到系统日历",
+    reminderBoundary: "Eat First 会下载一个重复日历事件，真正的通知由你的日历管理。之后若修改时间，请先删除旧事件再重新添加。",
+    habitDownloaded: "日历提醒已下载，请打开文件并保存这个重复事件。",
+    feedbackTitle: "试用反馈",
+    feedbackSummary: "用一份轻量问卷回顾冰箱、冷冻与菜谱几个关键环节。",
+    openFeedback: "打开反馈问卷",
     data: "数据管理",
     dataSummary: "下载本地备份、从文件恢复，或清空当前浏览器数据。",
     foodSafety: "食品安全说明",
@@ -535,6 +572,63 @@ export const zhCN: Messages = {
     backupDownloaded: "备份文件已下载。",
     clearConfirm: "这会永久删除当前浏览器中的冰箱和行动记录，请再次点击确认。",
     aboutBody: "冰箱小鲜队是一款本地优先的冰箱管理伙伴，所有数据只保存在当前浏览器。"
+  },
+  feedbackForm: {
+    eyebrow: "两分钟试用回顾",
+    title: "告诉我：闭环在哪里顺畅，又在哪里中断",
+    body: "问卷会根据本机使用记录预先勾选完成过的环节。你可以修正后，再自行分享反馈摘要。",
+    stepsTitle: "你实际试用了哪些环节？",
+    stepsBody: "这些答案只保存在当前浏览器，直到你主动分享或下载。",
+    steps: {
+      added_food: "把食物添加到冰箱",
+      understood_priorities: "看懂今天应该先处理什么",
+      handled_food: "记录吃掉、用一些、冷冻或丢弃",
+      used_frozen_area: "使用冷冻区或把食物移回冰箱",
+      generated_recipe: "生成菜谱建议",
+      updated_after_cooking: "做完菜后更新冰箱"
+    },
+    noneCompleted: "尚未选择任何环节",
+    painTitle: "最大的困难出现在哪里？",
+    painPoints: {
+      none: "没有明显困难",
+      adding: "添加食物",
+      priorities: "理解优先顺序",
+      actions: "记录处理结果",
+      freezing: "冷冻或解冻",
+      recipes: "生成有用的菜谱",
+      cooking_update: "做饭后更新冰箱",
+      other: "其他环节"
+    },
+    helpfulTitle: "Eat First 今天对你有多大帮助？",
+    returnTitle: "你明天还愿意回来吗？",
+    returnIntents: {
+      yes: "愿意",
+      maybe: "可能",
+      no: "不愿意"
+    },
+    noteTitle: "怎样能让下一次使用更好？",
+    notePlaceholder: "一个具体的卡点、困惑或缺失功能最有价值。",
+    shareTitle: "生成反馈摘要",
+    privacy: "V0.11.1 暂无反馈服务器。除非你主动分享、复制或下载，否则内容不会离开当前设备。",
+    generate: "生成摘要",
+    share: "分享",
+    copy: "复制",
+    download: "保存",
+    reset: "重置这份草稿",
+    generated: "摘要已生成，请确认后再分享。",
+    copied: "反馈摘要已复制。",
+    copyFallback: "系统阻止了复制，请手动选择上方摘要文字。",
+    shared: "反馈已分享。",
+    shareFallback: "分享没有完成，可以改用复制或保存。",
+    downloaded: "反馈文本已下载。",
+    summaryTitle: "Eat First 试用反馈",
+    summaryVersion: "版本",
+    summaryDate: "日期",
+    summarySteps: "试用环节",
+    summaryPain: "最大困难",
+    summaryHelpful: "有用程度",
+    summaryReturn: "明天是否愿意回来",
+    summaryNote: "改进建议"
   },
   safety: {
     title: "食品安全边界",

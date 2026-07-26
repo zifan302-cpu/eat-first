@@ -3,7 +3,7 @@ export const enGB = {
     name: "Fresh Squad",
     subtitle: "Know what to handle before food goes to waste.",
     valueLine: "A small team for your biggest fridge decisions.",
-    version: "V0.11 Cooking closes the loop"
+    version: "V0.11.1 Daily use and feedback"
   },
   nav: {
     home: "Home",
@@ -20,7 +20,8 @@ export const enGB = {
     fridgeTitle: "Fridge",
     statsTitle: "Squad progress",
     squadTitle: "The squad is home",
-    settingsTitle: "Settings"
+    settingsTitle: "Settings",
+    feedbackTitle: "Trial feedback"
   },
   actions: {
     eat: "Eat",
@@ -47,7 +48,8 @@ export const enGB = {
     downloadBackup: "Download backup",
     restoreBackup: "Restore from file",
     confirmClear: "Yes, clear everything",
-    cancelGeneration: "Cancel generation"
+    cancelGeneration: "Cancel generation",
+    back: "Back"
   },
   form: {
     name: "Food name",
@@ -136,7 +138,9 @@ export const enGB = {
     openedDue: "Opened reminder is due. This is not a safety guarantee.",
     openedSoon: "Opened reminder is close. Check the label and food condition.",
     openedNormal: "Opened date is being tracked as a reminder.",
-    noDate: "No date saved. Lower priority unless the fridge is otherwise clear."
+    noDate: "No date saved. Lower priority unless the fridge is otherwise clear.",
+    plannedToday: "Planned for today after defrosting. Keep this decision visible.",
+    plannedTomorrow: "Planned for tomorrow after defrosting."
   },
   empty: {
     top: "The fridge is quiet for now.",
@@ -429,10 +433,34 @@ export const enGB = {
       "Defrost only what you plan to use and keep the item labelled.",
       "After moving it back, update its date or note if that helps you act in time."
     ],
+    thawPlanTitle: "When will you use it?",
+    thawPlanBody: "Moving food out of the freezer needs a next action. Choose a day so it returns to the right place in Today.",
+    customPlanDate: "Or choose another date",
+    thawPlanSafety: "This plan does not replace package instructions or official food-safety guidance. Keep the original use-by information in mind.",
+    confirmThawPlan: "Move back with this plan",
+    plannedUseDate: "Planned after defrosting: {date}",
+    qualityCheckTitle: "Check it, then record the outcome",
+    qualityCheckBody: "For best-before or undated food, use the label and condition to decide what you actually did.",
+    qualityCheckTips: [
+      "Best before is usually about quality, while use by is a safety date.",
+      "Do not rely on this app to decide whether food is safe.",
+      "Choose the real outcome below so the fridge stays accurate."
+    ],
     completedBody: "This item is kept as part of your local handling record.",
     actionHistory: "Recent handling",
     emptyFrozen: "Nothing is waiting in the frozen section.",
     emptyHistory: "Completed food actions will appear here."
+  },
+  habit: {
+    eyebrow: "Daily return",
+    title: "Make one real fridge decision today",
+    body: "A small action is enough. Eat, freeze, or record the honest outcome, then come back tomorrow.",
+    completeTitle: "Today’s fridge check is complete",
+    completeBody: "The record is saved locally. Return at your chosen time tomorrow and review what changed.",
+    reminderAt: "Daily reminder planned for {time}",
+    addReminder: "Add reminder",
+    adjustReminder: "Adjust reminder",
+    feedbackAction: "Trial feedback"
   },
   stats: {
     eaten: "Eaten",
@@ -518,6 +546,15 @@ export const enGB = {
     installTitle: "Install on iPhone",
     installSummary: "Keep the app on your Home Screen and open it without browser chrome.",
     installed: "Installed as a Home Screen web app on this device.",
+    habitTitle: "Daily fridge return",
+    habitSummary: "Choose a time and add a recurring reminder to your phone or computer calendar.",
+    reminderTime: "Daily reminder time",
+    downloadReminder: "Add to system calendar",
+    reminderBoundary: "Eat First downloads a recurring calendar event. Your calendar controls the notification. If you change the time later, remove the old event before adding it again.",
+    habitDownloaded: "Calendar reminder downloaded. Open the file and save the recurring event.",
+    feedbackTitle: "Trial feedback",
+    feedbackSummary: "Answer a short survey about the key fridge, freezer and recipe steps.",
+    openFeedback: "Open feedback form",
     data: "Data",
     dataSummary: "Download a local backup, restore one, or clear this browser.",
     foodSafety: "Food Safety Disclaimer",
@@ -533,6 +570,63 @@ export const enGB = {
     backupDownloaded: "Backup downloaded.",
     clearConfirm: "This permanently removes the fridge and action history from this browser. Tap again to confirm.",
     aboutBody: "Fresh Squad is a local-first fridge companion. All data stays in this browser."
+  },
+  feedbackForm: {
+    eyebrow: "Two-minute trial check",
+    title: "Tell us where the loop works — and where it breaks",
+    body: "The form uses activity on this device to pre-tick completed steps. Correct anything that is wrong, then share the summary yourself.",
+    stepsTitle: "Which steps did you actually try?",
+    stepsBody: "These answers are stored only in this browser until you choose to share or download them.",
+    steps: {
+      added_food: "Added food to the fridge",
+      understood_priorities: "Understood what to handle first",
+      handled_food: "Recorded eat, use some, freeze or discard",
+      used_frozen_area: "Used the frozen area or moved food back",
+      generated_recipe: "Generated a recipe idea",
+      updated_after_cooking: "Updated the fridge after cooking"
+    },
+    noneCompleted: "No steps selected",
+    painTitle: "Where was the biggest difficulty?",
+    painPoints: {
+      none: "No major difficulty",
+      adding: "Adding food",
+      priorities: "Understanding priorities",
+      actions: "Recording what happened",
+      freezing: "Freezing or defrosting",
+      recipes: "Generating a useful recipe",
+      cooking_update: "Updating after cooking",
+      other: "Something else"
+    },
+    helpfulTitle: "How useful was Eat First today?",
+    returnTitle: "Would you come back tomorrow?",
+    returnIntents: {
+      yes: "Yes",
+      maybe: "Maybe",
+      no: "No"
+    },
+    noteTitle: "What would make the next use better?",
+    notePlaceholder: "One concrete moment, confusion or missing feature is most useful.",
+    shareTitle: "Create a feedback summary",
+    privacy: "Eat First has no feedback server in V0.11.1. Nothing leaves this device unless you use Share, Copy or Download.",
+    generate: "Create summary",
+    share: "Share",
+    copy: "Copy",
+    download: "Save",
+    reset: "Reset this draft",
+    generated: "Summary ready. Review it before sharing.",
+    copied: "Feedback summary copied.",
+    copyFallback: "Copy was blocked. Select the summary text above manually.",
+    shared: "Feedback shared.",
+    shareFallback: "Sharing was not completed. You can copy or save the summary instead.",
+    downloaded: "Feedback text downloaded.",
+    summaryTitle: "Eat First trial feedback",
+    summaryVersion: "Version",
+    summaryDate: "Date",
+    summarySteps: "Steps tried",
+    summaryPain: "Biggest difficulty",
+    summaryHelpful: "Usefulness",
+    summaryReturn: "Would return tomorrow",
+    summaryNote: "Suggested improvement"
   },
   safety: {
     title: "Food safety boundary",

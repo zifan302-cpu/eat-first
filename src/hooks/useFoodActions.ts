@@ -40,7 +40,7 @@ export interface UseFoodActions {
   markEaten(id: string): void;
   markFrozen(id: string): void;
   markDiscarded(id: string): void;
-  restoreFrozen(id: string): void;
+  restoreFrozen(id: string, plannedUseDate: string): void;
   usePart(id: string, remainingAmount?: number, remainingText?: string): void;
   snoozeUntilTomorrow(id: string): void;
 }
@@ -147,6 +147,9 @@ function markFoodStatus(
       consumedAt: type === "eaten" ? at : food.consumedAt,
       frozenAt: type === "frozen" ? at : food.frozenAt,
       discardedAt: type === "discarded" ? at : food.discardedAt,
+      plannedUseDate: type === "frozen" || type === "eaten" || type === "discarded"
+        ? undefined
+        : food.plannedUseDate,
       updatedAt: at,
       actionHistory: [...food.actionHistory, action(type, now, undefined, context)]
     };
@@ -183,8 +186,10 @@ export function markFoodDiscarded(
 export function restoreFrozenFood(
   foods: FoodItem[],
   id: string,
+  plannedUseDate: string,
   now = new Date()
 ): FoodItem[] {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(plannedUseDate)) return foods;
   return foods.map((food) => {
     if (food.id !== id || food.status !== "frozen") return food;
     const at = isoNow(now);
@@ -192,8 +197,13 @@ export function restoreFrozenFood(
       ...food,
       status: "active",
       snoozedUntil: undefined,
+      plannedUseDate,
+      thawedAt: at,
       updatedAt: at,
-      actionHistory: [...food.actionHistory, action("restored", now)]
+      actionHistory: [
+        ...food.actionHistory,
+        action("restored", now, `planned-use:${plannedUseDate}`)
+      ]
     };
   });
 }
@@ -334,11 +344,11 @@ export function useFoodActions(): UseFoodActions {
           { action: "discarded", name: stateFoodName(id) }
         );
       },
-      restoreFrozen(id) {
+      restoreFrozen(id, plannedUseDate) {
         commitState(
           (current) => ({
             ...current,
-            foods: restoreFrozenFood(current.foods, id)
+            foods: restoreFrozenFood(current.foods, id, plannedUseDate)
           }),
           { action: "restored", name: stateFoodName(id) }
         );

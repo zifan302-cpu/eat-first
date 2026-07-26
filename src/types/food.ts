@@ -132,7 +132,9 @@ export interface FoodItem {
   status: FoodStatus;
   source: FoodSource;
   snoozedUntil?: string;
+  plannedUseDate?: string;
   frozenAt?: string;
+  thawedAt?: string;
   consumedAt?: string;
   discardedAt?: string;
   createdAt: string;
@@ -192,6 +194,10 @@ export interface UserPreferences {
   topN: number;
   showSafetyBanner: boolean;
   hasSeenOnboarding: boolean;
+  habit: {
+    reminderEnabled: boolean;
+    reminderTime: string;
+  };
   recipe: {
     cuisine: RecipeCuisinePreference;
     defaultServings: 1 | 2 | 3 | 4;
@@ -211,7 +217,7 @@ export interface AppMeta {
 }
 
 export interface AppStateEnvelope {
-  schemaVersion: "1.6.0";
+  schemaVersion: "1.7.0";
   appId: "eat-first";
   preferences: UserPreferences;
   foods: FoodItem[];

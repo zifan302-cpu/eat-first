@@ -1,6 +1,9 @@
 import { ArrowRight, CheckCircle2, Plus, WandSparkles } from "lucide-react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { CompactFoodCard } from "../components/CompactFoodCard";
+import { FoodActionSheet } from "../components/FoodActionSheet";
+import { HabitLoopCard } from "../components/HabitLoopCard";
 import { FutureFeatureCard } from "../components/FutureFeatureCard";
 import { PageHeader } from "../components/PageHeader";
 import { SafetyBanner } from "../components/SafetyBanner";
@@ -10,6 +13,7 @@ import { useLocale } from "../hooks/useLocale";
 import { CHARACTERS } from "../lib/characters";
 import { getGameProgress } from "../lib/game";
 import { getTopFoods } from "../lib/priority";
+import type { FoodItem, PrimaryCta } from "../types/food";
 
 export function HomePage(): JSX.Element {
   const { state, setState } = useAppState();
@@ -20,12 +24,29 @@ export function HomePage(): JSX.Element {
   const game = getGameProgress(state.foods);
   const captain = CHARACTERS.tomato;
   const scout = CHARACTERS.broccoli;
+  const [actionTarget, setActionTarget] = useState<{
+    food: FoodItem;
+    panel: "freeze" | "quality";
+  } | null>(null);
   const today = new Intl.DateTimeFormat(locale, {
     weekday: "long",
     month: "short",
     day: "numeric"
   }).format(new Date());
   const progress = (game.missionProgress / game.missionTarget) * 100;
+
+  function handleTopAction(food: FoodItem, action: PrimaryCta) {
+    if (action === "freeze" || action === "check") {
+      setActionTarget({
+        food,
+        panel: action === "freeze" ? "freeze" : "quality"
+      });
+      return;
+    }
+    if (action === "eat") actions.markEaten(food.id);
+    if (action === "later") actions.snoozeUntilTomorrow(food.id);
+    if (action === "discard") actions.markDiscarded(food.id);
+  }
 
   return (
     <div className="space-y-6">
@@ -104,10 +125,7 @@ export function HomePage(): JSX.Element {
                 food={food}
                 rank={index + 1}
                 t={t}
-                onEat={actions.markEaten}
-                onFreeze={actions.markFrozen}
-                onLater={actions.snoozeUntilTomorrow}
-                onDiscard={actions.markDiscarded}
+                onAction={handleTopAction}
               />
             ))
           ) : (
@@ -145,6 +163,13 @@ export function HomePage(): JSX.Element {
         onOpen={() => navigate("/recipes")}
       />
 
+      <HabitLoopCard
+        reminderEnabled={state.preferences.habit.reminderEnabled}
+        reminderTime={state.preferences.habit.reminderTime}
+        missionComplete={game.missionComplete}
+        t={t}
+      />
+
       {state.preferences.showSafetyBanner ? (
         <SafetyBanner
           t={t}
@@ -154,6 +179,29 @@ export function HomePage(): JSX.Element {
               preferences: { ...current.preferences, showSafetyBanner: false }
             }))
           }
+        />
+      ) : null}
+
+      {actionTarget ? (
+        <FoodActionSheet
+          food={actionTarget.food}
+          locale={locale}
+          t={t}
+          initialPanel={actionTarget.panel}
+          onClose={() => setActionTarget(null)}
+          onUsePart={actions.usePart}
+          onUseAll={actions.markEaten}
+          onFreeze={actions.markFrozen}
+          onThaw={actions.restoreFrozen}
+          onLater={actions.snoozeUntilTomorrow}
+          onDiscard={actions.markDiscarded}
+          onEdit={() => {
+            setActionTarget(null);
+            navigate("/fridge");
+          }}
+          onDelete={(id) => {
+            if (window.confirm(t.fridge.deleteConfirm)) actions.deleteFood(id);
+          }}
         />
       ) : null}
 

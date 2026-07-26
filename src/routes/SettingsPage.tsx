@@ -1,14 +1,17 @@
 import {
+  BellRing,
   ChefHat,
   Database,
   Download,
   Info,
   Languages,
+  MessageSquareText,
   ShieldCheck,
   Smartphone,
   Upload
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { CustomTagEditor } from "../components/CustomTagEditor";
 import { PageHeader } from "../components/PageHeader";
 import { SafetyBanner } from "../components/SafetyBanner";
@@ -17,6 +20,7 @@ import { useAppState } from "../hooks/useAppState";
 import { useLocale } from "../hooks/useLocale";
 import { COOKING_EQUIPMENT, COOKING_EQUIPMENT_GROUPS, PANTRY_STAPLES } from "../lib/constants";
 import { clearState, createDefaultState, isImportableState, migrateState } from "../lib/storage";
+import { buildDailyReminderCalendar } from "../lib/habit";
 import { cx } from "../lib/ui";
 import type { CookingEquipment, LocaleCode, PantryStaple, UserPreferences } from "../types/food";
 
@@ -30,6 +34,7 @@ export function SettingsPage(): JSX.Element {
   const [dataMessage, setDataMessage] = useState<string | null>(null);
   const [clearArmed, setClearArmed] = useState(false);
   const [installed, setInstalled] = useState(false);
+  const [habitMessage, setHabitMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const navigatorWithStandalone = navigator as Navigator & { standalone?: boolean };
@@ -54,6 +59,37 @@ export function SettingsPage(): JSX.Element {
         }
       }
     }));
+  }
+
+  function updateHabitPreferences(patch: Partial<UserPreferences["habit"]>) {
+    setState((current) => ({
+      ...current,
+      preferences: {
+        ...current.preferences,
+        habit: {
+          ...current.preferences.habit,
+          ...patch
+        }
+      }
+    }));
+  }
+
+  function downloadHabitReminder() {
+    const calendar = buildDailyReminderCalendar(
+      locale,
+      state.preferences.habit.reminderTime
+    );
+    const blob = new Blob([calendar], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "eat-first-daily-reminder.ics";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    updateHabitPreferences({ reminderEnabled: true });
+    setHabitMessage(t.settings.habitDownloaded);
   }
 
   function updateEquipment(item: CookingEquipment, enabled: boolean) {
@@ -319,6 +355,59 @@ export function SettingsPage(): JSX.Element {
             />
           </div>
         </div>
+      </SettingsDisclosure>
+
+      <div id="habit" className="scroll-mt-5">
+        <SettingsDisclosure
+          icon={BellRing}
+          title={t.settings.habitTitle}
+          summary={t.settings.habitSummary}
+        >
+          <div className="space-y-4">
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-black text-ink">
+                {t.settings.reminderTime}
+              </span>
+              <input
+                type="time"
+                value={state.preferences.habit.reminderTime}
+                onChange={(event) => {
+                  updateHabitPreferences({
+                    reminderTime: event.target.value,
+                    reminderEnabled: false
+                  });
+                  setHabitMessage(null);
+                }}
+                className="fresh-field"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={downloadHabitReminder}
+              className="fresh-button-primary w-full"
+            >
+              <Download className="mr-2 inline h-4 w-4" aria-hidden />
+              {t.settings.downloadReminder}
+            </button>
+            <p className="text-xs font-medium leading-5 text-ink-muted">
+              {t.settings.reminderBoundary}
+            </p>
+            {habitMessage ? (
+              <p className="text-sm font-bold leading-5 text-leaf-700">{habitMessage}</p>
+            ) : null}
+          </div>
+        </SettingsDisclosure>
+      </div>
+
+      <SettingsDisclosure
+        icon={MessageSquareText}
+        title={t.settings.feedbackTitle}
+        summary={t.settings.feedbackSummary}
+      >
+        <Link to="/feedback" className="fresh-button-primary flex w-full items-center justify-center">
+          <MessageSquareText className="mr-2 h-4 w-4" aria-hidden />
+          {t.settings.openFeedback}
+        </Link>
       </SettingsDisclosure>
 
       <SettingsDisclosure
