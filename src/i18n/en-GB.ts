@@ -3,7 +3,7 @@ export const enGB = {
     name: "Fresh Squad",
     subtitle: "Know what to handle before food goes to waste.",
     valueLine: "A small team for your biggest fridge decisions.",
-    version: "V0.11.2 Centralised trial feedback"
+    version: "V0.11.4 Character freshness states"
   },
   nav: {
     home: "Home",
@@ -577,7 +577,7 @@ export const enGB = {
     body: "Submit the short pilot form here. Your response goes directly to the Eat First Tally inbox.",
     privacyTitle: "Only trial context is attached",
     privacyBody: "Eat First sends the app version, language, install mode and objectively observed steps with this form. Food names and fridge contents stay on this device.",
-    contextVersion: "V0.11.2",
+      contextVersion: "V0.11.4",
     observedCount: "{count} steps observed",
     installModes: {
       standalone: "Home screen app",

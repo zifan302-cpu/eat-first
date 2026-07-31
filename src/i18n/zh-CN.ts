@@ -5,7 +5,7 @@ export const zhCN: Messages = {
     name: "冰箱小鲜队",
     subtitle: "在食物浪费前，先知道今天该处理什么。",
     valueLine: "一支帮你处理冰箱大事的小队。",
-    version: "V0.11.2 集中收集试用反馈"
+    version: "V0.11.4 角色保质期状态"
   },
   nav: {
     home: "首页",
@@ -579,7 +579,7 @@ export const zhCN: Messages = {
     body: "在这里填写简短试点问卷，提交后会直接进入 Eat First 的 Tally 反馈信箱。",
     privacyTitle: "只附带试用环境，不上传冰箱内容",
     privacyBody: "问卷会附带版本、语言、安装方式和本机可确认的已体验环节。具体食材名称与冰箱内容仍只保存在当前设备。",
-    contextVersion: "V0.11.2",
+      contextVersion: "V0.11.4",
     observedCount: "已观察到 {count} 个环节",
     installModes: {
       standalone: "主屏幕 App",

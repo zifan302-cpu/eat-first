@@ -1,1 +1,9 @@
 output/
+assets/
+exec-*.png
+.env
+.env.*
+.vercel/
+.git/
+node_modules/
+dist/

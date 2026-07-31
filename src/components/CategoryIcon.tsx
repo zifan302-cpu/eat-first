@@ -14,11 +14,17 @@ import {
   UtensilsCrossed,
   Wheat
 } from "lucide-react";
+import { useState } from "react";
 import type { FoodCategory } from "../types/food";
+import {
+  CATEGORY_CHARACTER_ASSETS,
+  type CategoryCharacterState
+} from "../lib/categoryCharacters";
 import { cx } from "../lib/ui";
 
 interface CategoryIconProps {
   category: FoodCategory;
+  state?: CategoryCharacterState;
   className?: string;
 }
 
@@ -56,17 +62,37 @@ const colors = {
   other: "bg-paper text-ink-muted"
 } satisfies Record<FoodCategory, string>;
 
-export function CategoryIcon({ category, className }: CategoryIconProps): JSX.Element {
+export function CategoryIcon({
+  category,
+  state = "fresh",
+  className
+}: CategoryIconProps): JSX.Element {
   const Icon = icons[category];
+  const asset = CATEGORY_CHARACTER_ASSETS[state][category];
+  const [failedAsset, setFailedAsset] = useState<string>();
+  const imageFailed = failedAsset === asset;
+
   return (
     <span
       className={cx(
-        "grid h-10 w-10 shrink-0 place-items-center rounded-[0.85rem] border border-ink/10",
+        "grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-[0.85rem] border border-ink/10",
         colors[category],
         className
       )}
     >
-      <Icon aria-hidden className="h-5 w-5" strokeWidth={2.1} />
+      {imageFailed ? (
+        <Icon aria-hidden className="h-5 w-5" strokeWidth={2.1} />
+      ) : (
+        <img
+          src={asset}
+          alt=""
+          aria-hidden
+          decoding="async"
+          draggable={false}
+          onError={() => setFailedAsset(asset)}
+          className="h-[115%] w-[115%] max-w-none object-contain object-bottom"
+        />
+      )}
     </span>
   );
 }

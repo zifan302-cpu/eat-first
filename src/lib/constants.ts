@@ -10,7 +10,7 @@ import type {
 export const STORAGE_KEY = "eat-first:v1:state";
 export const SCHEMA_VERSION = "1.7.0";
 export const APP_ID = "eat-first";
-export const APP_VERSION = "0.11.2";
+export const APP_VERSION = "0.11.4";
 
 export const DATE_LABEL_TYPES: DateLabelType[] = [
   "use_by",

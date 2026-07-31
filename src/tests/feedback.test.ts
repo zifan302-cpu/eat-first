@@ -62,7 +62,7 @@ describe("feedback context", () => {
 
     expect(embedUrl.origin).toBe("https://tally.so");
     expect(embedUrl.pathname).toBe("/embed/ZjX92A");
-    expect(embedUrl.searchParams.get("app_version")).toBe("0.11.2");
+    expect(embedUrl.searchParams.get("app_version")).toBe("0.11.4");
     expect(embedUrl.searchParams.get("locale")).toBe("zh-CN");
     expect(embedUrl.searchParams.get("install_mode")).toBe("standalone");
     expect(embedUrl.searchParams.get("entry_point")).toBe("app_feedback");
@@ -71,7 +71,7 @@ describe("feedback context", () => {
     );
     expect(embedUrl.searchParams.get("dynamicHeight")).toBe("1");
     expect(publicUrl.pathname).toBe("/r/ZjX92A");
-    expect(publicUrl.searchParams.get("app_version")).toBe("0.11.2");
+    expect(publicUrl.searchParams.get("app_version")).toBe("0.11.4");
     expect(publicUrl.searchParams.has("dynamicHeight")).toBe(false);
   });
 

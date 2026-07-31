@@ -1,8 +1,10 @@
 import type { FoodItem } from "../types/food";
 import { characterForFood } from "../lib/characters";
+import { categoryCharacterStateForFood } from "../lib/categoryCharacters";
 import { cx } from "../lib/ui";
 import { CategoryIcon } from "./CategoryIcon";
-import { getFreshnessStage } from "../lib/freshness";
+import { freshnessStageForVerdict } from "../lib/freshness";
+import { getPriority } from "../lib/priority";
 import type { FreshnessStage } from "../lib/freshness";
 
 interface FoodPortraitProps {
@@ -32,7 +34,10 @@ export function FoodPortrait({
   className
 }: FoodPortraitProps): JSX.Element {
   const character = characterForFood(food);
-  const stage = getFreshnessStage(food);
+  const today = new Date();
+  const verdict = getPriority(food, today).verdict;
+  const stage = freshnessStageForVerdict(verdict);
+  const categoryState = categoryCharacterStateForFood(food, verdict, today);
   const asset = character?.id === "tomato" ? tomatoStateAssets[stage] : character?.asset;
 
   return (
@@ -58,7 +63,11 @@ export function FoodPortrait({
           )}
         />
       ) : (
-        <CategoryIcon category={food.category} className="h-full w-full rounded-none border-0" />
+        <CategoryIcon
+          category={food.category}
+          state={categoryState}
+          className="h-full w-full rounded-none border-0"
+        />
       )}
       <span
         aria-hidden

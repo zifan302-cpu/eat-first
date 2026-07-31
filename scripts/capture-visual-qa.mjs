@@ -204,6 +204,29 @@ const sampleState = {
   meta: { createdAt: at, updatedAt: at }
 };
 
+const categoryCharacterState = {
+  ...sampleState,
+  foods: [
+    ["qa-meat", "Meat sample", "meat", "best_before", 5],
+    ["qa-fish", "Fish sample", "fish", "use_by", 2],
+    ["qa-dairy", "Dairy sample", "dairy_eggs", "use_by", -1],
+    ["qa-vegetable", "Cucumber", "vegetable", "best_before", 5],
+    ["qa-fruit", "Apple sample", "fruit", "use_by", 2],
+    ["qa-salad", "Salad sample", "salad", "best_before", -1],
+    ["qa-leftovers", "Leftover stew", "leftovers", "best_before", 5],
+    ["qa-ready", "Ready meal sample", "ready_meal", "use_by", 2],
+    ["qa-bakery", "Bread sample", "bakery", "use_by", -1],
+    ["qa-drink", "Drink sample", "drink", "best_before", 5],
+    ["qa-condiment", "Condiment sample", "condiment", "best_before", 1],
+    ["qa-dry", "Dry goods sample", "dry_goods", "best_before", -1],
+    ["qa-frozen", "Frozen sample", "frozen_food", "use_by", 2],
+    ["qa-other", "Other sample", "other", "none", null]
+  ].map(([id, name, category, dateLabelType, dateOffset]) =>
+    makeFood(id, name, category, dateLabelType, dateOffset === null ? undefined : date(dateOffset), 1)
+  ),
+  recipeHistory: []
+};
+
 async function evaluate(expression) {
   return send("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true });
 }
@@ -224,7 +247,7 @@ async function capture(name) {
   });
   const outputDir = resolve("output/playwright");
   await mkdir(outputDir, { recursive: true });
-  const output = join(outputDir, `eat-first-v0112-${name}.png`);
+  const output = join(outputDir, `eat-first-v0114-${name}.png`);
   await writeFile(output, Buffer.from(result.data, "base64"));
   console.log(output);
 }
@@ -366,7 +389,7 @@ for (const [name, hash] of [
     const embed = feedbackEmbed.result.value;
     if (
       !embed ||
-      embed.appVersion !== "0.11.2" ||
+    embed.appVersion !== "0.11.4" ||
       embed.locale !== "zh-CN" ||
       embed.entryPoint !== "app_feedback" ||
       embed.installMode !== "browser" ||
@@ -446,6 +469,43 @@ if (recoveredDraft !== "\u8349\u7a3f\u6062\u590d\u756a\u8304") {
 }
 await capture("add-draft-recovered-430x900");
 console.log(JSON.stringify({ draftRecovery: "passed", recoveredDraft }));
+
+await evaluate(
+  `localStorage.setItem('eat-first:v1:state', ${JSON.stringify(JSON.stringify(categoryCharacterState))}); location.hash = '#/fridge'; location.reload()`
+);
+await delay(1800);
+await evaluate("document.fonts.ready");
+const categoryCharacters = await evaluate(`(() => {
+  const images = Array.from(document.querySelectorAll('img[src*="/art/category-characters/"]'));
+  return {
+    count: images.length,
+    uniqueSources: [...new Set(images.map((image) => new URL(image.src).pathname))],
+    stateCounts: images.reduce((counts, image) => {
+      const source = new URL(image.src).pathname;
+      if (source.includes('/use_soon/')) counts.useSoon += 1;
+      else if (source.includes('/expired/')) counts.expired += 1;
+      else counts.fresh += 1;
+      return counts;
+    }, { fresh: 0, useSoon: 0, expired: 0 }),
+    broken: images
+      .filter((image) => !image.complete || image.naturalWidth === 0)
+      .map((image) => image.getAttribute('src'))
+  };
+})()`);
+if (
+  categoryCharacters.result.value?.count !== 14 ||
+  categoryCharacters.result.value?.uniqueSources.length !== 14 ||
+  categoryCharacters.result.value?.stateCounts.fresh !== 5 ||
+  categoryCharacters.result.value?.stateCounts.useSoon !== 5 ||
+  categoryCharacters.result.value?.stateCounts.expired !== 4 ||
+  categoryCharacters.result.value?.broken.length > 0
+) {
+  throw new Error(`Category character assets did not load: ${JSON.stringify(categoryCharacters.result.value)}`);
+}
+await evaluate("window.scrollTo(0, 0)");
+await delay(250);
+await capture("category-character-states-430x900");
+console.log(JSON.stringify({ categoryCharacters: categoryCharacters.result.value }));
 
 if (browserErrors.length > 0) {
   throw new Error(`Browser errors detected: ${JSON.stringify(browserErrors)}`);
